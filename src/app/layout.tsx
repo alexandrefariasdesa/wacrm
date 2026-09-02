@@ -4,8 +4,12 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+// Efeito colateral: alinha o locale padrão do date-fns ao do app. Precisa
+// vir antes da primeira chamada de format() em qualquer componente.
+import "@/lib/date-locale";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { DateLocaleBoot } from "@/components/date-locale-boot";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -110,6 +114,7 @@ export default async function RootLayout({
       <body className="min-h-full bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages} locale={locale}>
           <ThemeProvider>
+            <DateLocaleBoot />
             {children}
             <ThemedToaster />
           </ThemeProvider>

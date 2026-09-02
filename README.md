@@ -40,6 +40,15 @@ clone or fork it to run your own CRM.
   Add a **knowledge base** (FAQs, policies, product docs) and it
   answers from your own content — hybrid retrieval (Postgres full-text,
   or semantic pgvector when an embeddings key is set).
+- **Ad attribution** — ties every WhatsApp lead back to the ad that
+  produced it, and every won deal back to the spend that paid for it.
+  Meta Click-to-WhatsApp is captured exactly, with no pixel and no
+  setup (Meta stamps the ad id on the first inbound message). Google
+  Ads and any landing-page traffic use a tracked link that stamps a
+  short code into the prefilled message — the only thing that survives
+  the browser's jump to WhatsApp. Pulls spend from the Meta Marketing
+  API and the Google Ads API for real CPL, CPA and ROAS per creative.
+  See [docs/ads-attribution.md](./docs/ads-attribution.md).
 - **Real-time dashboard** — response times, daily volume, pipeline
   value, cross-module activity feed.
 - **Team accounts** — invite teammates by link, role-based access
