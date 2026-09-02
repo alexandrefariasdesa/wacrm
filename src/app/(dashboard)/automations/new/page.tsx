@@ -9,6 +9,8 @@ import {
   type BuilderStep,
 } from "@/components/automations/automation-builder"
 import { AUTOMATION_TEMPLATES, type TemplateSlug } from "@/lib/automations/templates"
+import { localizeTemplate } from "@/lib/automations/localize-template"
+import { useTranslations } from "next-intl"
 import type { AutomationStepType, AutomationTriggerType } from "@/types"
 
 // `useSearchParams` requires a Suspense boundary or the production build
@@ -23,12 +25,15 @@ export default function NewAutomationPage() {
 }
 
 function NewAutomationPageInner() {
+  const tTpl = useTranslations("Automations.templates")
   const params = useSearchParams()
   const template = params.get("template") as TemplateSlug | null
 
   const initial: BuilderInitial = useMemo(() => {
     if (template && AUTOMATION_TEMPLATES[template]) {
-      const t = AUTOMATION_TEMPLATES[template]
+      // Traduzido ANTES de virar rascunho: o texto semeado aqui é o que a
+      // automação vai enviar ao cliente, não só um rótulo de tela.
+      const t = localizeTemplate(AUTOMATION_TEMPLATES[template], tTpl)
       const steps = expandFromSeeds(
         t.steps.map((seed, idx) => ({
           index: idx,
@@ -55,7 +60,7 @@ function NewAutomationPageInner() {
       is_active: false,
       steps: [],
     }
-  }, [template])
+  }, [template, tTpl])
 
   return <AutomationBuilder initial={initial} />
 }

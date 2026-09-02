@@ -38,7 +38,8 @@
     "defaultAvatar": "Avatar",
     "menuProfile": "Profile",
     "menuSettings": "Settings",
-    "menuSignOut": "Sign out"
+    "menuSignOut": "Sign out",
+    "ads": "Ads"
   },
   "Header": {
     "dashboard": "Dashboard",
@@ -384,9 +385,9 @@
         "custom": "Custom Fields",
         "deals": "Deals",
         "tags": "Tags",
-      "noTags": "No tags",
-      "noDeals": "No deals",
-      "addNotePlaceholder": "Add a note..."
+        "noTags": "No tags",
+        "noDeals": "No deals",
+        "addNotePlaceholder": "Add a note..."
       },
       "actions": {
         "edit": "Edit",
@@ -1012,6 +1013,29 @@
         "matchExact": "Exact",
         "closeConversationHint": "Sets the conversation status to \"closed\". No configuration needed."
       }
+    },
+    "templates": {
+      "welcome_message": {
+        "name": "Welcome Message",
+        "description": "Auto-reply to first-time contacts with a greeting.",
+        "step0": "Hi! 👋 Thanks for reaching out. We'll get back to you shortly."
+      },
+      "out_of_office": {
+        "name": "Out of Office",
+        "description": "Auto-reply during off-hours so nobody is left waiting.",
+        "step1": "Thanks for your message! Our team is offline right now (9am–6pm) and will reply first thing tomorrow."
+      },
+      "lead_qualifier": {
+        "name": "Lead Qualifier",
+        "description": "Ask qualification questions to filter inbound leads.",
+        "keywords": "pricing, quote, buy",
+        "step0": "Great — happy to help with pricing! Quick question: roughly how many seats are you looking for?"
+      },
+      "follow_up_reminder": {
+        "name": "Follow-up Reminder",
+        "description": "Send a nudge if a contact has not replied within 24 hours.",
+        "step1": "Just circling back — did you have any other questions for us? Happy to help!"
+      }
     }
   },
   "Flows": {
@@ -1234,6 +1258,24 @@
       "modeRemove": "Remove",
       "tagPicked": "{mode} tag {tag}…",
       "tagNone": "{mode} tag (none picked)"
+    },
+    "header": {
+      "back": "Back to Flows",
+      "namePlaceholder": "Flow name",
+      "nameAria": "Flow name",
+      "dirtyTitle": "Unsaved changes — hit Save to persist",
+      "edited": "Edited",
+      "runs": "Runs",
+      "delete": "Delete",
+      "pause": "Pause",
+      "activate": "Activate",
+      "cannotActivate": "Fix the issues below before activating",
+      "save": "Save",
+      "descriptionPlaceholder": "Add a short description (internal — customers don't see this)",
+      "descriptionAria": "Flow description",
+      "statusDraft": "Draft",
+      "statusActive": "Active",
+      "statusArchived": "Archived"
     }
   },
   "Settings": {
@@ -1369,13 +1411,11 @@
       "deleteLocallyAria": "Delete template locally",
       "deleteMetaLocallyTitle": "Delete from Meta and locally",
       "deleteLocallyTitle": "Delete locally",
-      
       "dialogEditTitle": "Edit Message Template",
       "dialogNewTitle": "New Message Template",
       "dialogEditDesc": "Save your changes to re-submit to Meta. Status will flip back to PENDING during review.",
       "dialogNewDesc": "Build a template and submit it to Meta for approval. Once approved, you can use it in broadcasts and the inbox.",
       "authWarning": "AUTHENTICATION templates have a fixed body + OTP button shape that needs a different builder. Create them in Meta WhatsApp Manager for now and use <bold>Sync from Meta</bold> to bring them in.",
-      
       "templateName": "Template Name",
       "namePlaceholder": "e.g. order_confirmation",
       "nameFixed": "Name is fixed once a template exists on Meta — create a new template to change it.",
@@ -1384,7 +1424,6 @@
       "language": "Language",
       "langFixed": "Language is fixed once a template exists on Meta.",
       "langHint": "Must match the exact code on Meta — <code>en_US</code> and <code>en</code> are distinct.",
-      
       "header": "Header",
       "headerNone": "None",
       "headerText": "Text",
@@ -1394,7 +1433,6 @@
       "headerTextPlaceholder": "Header text (max 60 chars, optional {{1}})",
       "headerSampleAria": "Sample value for header variable",
       "headerSamplePlaceholder": "Sample value for {{1}} (required for Meta review)",
-      
       "uploadImage": "Upload image",
       "uploadHint": "JPEG or PNG, ≤5 MB",
       "mediaUrlPlaceholder": "https://… (or paste a public {format} link)",
@@ -1402,17 +1440,14 @@
       "mediaHint": "Must be a publicly accessible HTTPS link. Meta fetches it once during review, so it needs to stay live for ~24 hrs.",
       "videoHint": " Recommended: MP4 / 3GPP, ≤16 MB, ≤60 seconds.",
       "documentHint": " Recommended: PDF, ≤100 MB.",
-      
       "bodyText": "Body Text",
       "bodyPlaceholder": "Hello {{1}}, your order {{2}} is confirmed.",
       "bodyHint": "Use {{1}}, {{2}} for variables (must be contiguous starting at {{1}}).",
       "sampleValues": "Sample values (Meta uses these to review your template)",
       "sampleAria": "Sample value for body variable {var}",
       "samplePlaceholder": "Sample for {var}",
-      
       "footer": "Footer (optional)",
       "footerPlaceholder": "Optional footer text (max 60 chars)",
-      
       "buttons": "Buttons (optional)",
       "addButton": "Add Button",
       "buttonsLimit": "Up to {max} buttons. QUICK_REPLY buttons must come before URL / phone / copy-code buttons.",
@@ -1425,19 +1460,16 @@
       "urlSamplePlaceholder": "Example value for {{1}} (required when URL has a variable)",
       "phonePlaceholder": "+15551234567",
       "codePlaceholder": "Example code (e.g. SUMMER20)",
-      
       "cancel": "Cancel",
       "saving": "Saving…",
       "submitting": "Submitting…",
       "saveResubmit": "Save & Resubmit",
       "submitApproval": "Submit for Approval",
-      
       "deleteDialogTitle": "Delete template?",
       "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from wacrm. Active broadcasts using this template will start failing on their next send. This can't be undone.",
       "deleteLocalDesc": "\"{name}\" will be deleted from wacrm. It was never submitted to Meta, so no remote cleanup is needed.",
       "deleting": "Deleting…",
       "delete": "Delete",
-      
       "toastLoadFailed": "Failed to load templates",
       "toastSubmitFailed": "Failed to submit",
       "toastSubmitEditSuccess": "Edit submitted — Meta typically reviews within 24 hours.",
@@ -1583,7 +1615,6 @@
       "profileSaved": "Profile saved",
       "emailChangeFailed": "Email change failed: {message}",
       "profileSavedEmailCheck": "Profile saved — check your email to confirm the address change",
-      
       "passwordTitle": "Password",
       "passwordDesc": "Use at least {min} characters. You will stay signed in on this device after changing it.",
       "currentPassword": "Current password",
@@ -1597,7 +1628,6 @@
       "currentPasswordIncorrect": "Current password is incorrect",
       "passwordUpdateFailed": "Password update failed: {message}",
       "passwordUpdated": "Password updated",
-      
       "sessionsTitle": "Active sessions",
       "sessionsDesc": "Sign out of every device where you're logged in — including this one. Useful if you lost a laptop or shared your password.",
       "signOutAll": "Sign out of all devices",
@@ -1738,5 +1768,260 @@
       "reindexTooltip": "Re-embed all documents (e.g. after adding an embeddings key)",
       "loading": "Loading…"
     }
+  },
+  "Ads": {
+    "page": {
+      "title": "Ads",
+      "description": "What you invested, and what came back — every lead tied to the ad that brought it.",
+      "rangeDays": "{days} days",
+      "attribution": {
+        "first": "First click",
+        "last": "Last click"
+      },
+      "attributionHint": {
+        "first": "Credit goes to the ad that first brought the person in.",
+        "last": "Credit goes to the most recent ad that brought them back."
+      },
+      "dateRuleNote": "Spend is counted on the platform’s billing day, leads on the day they messaged, and revenue on the day the deal was won. Short ranges therefore understate ROAS, because deals close after the click.",
+      "oauthConnected": "{platform} connected — {count} ad account(s).",
+      "oauthCancelled": "Connection cancelled.",
+      "oauthFailed": "Could not connect: {detail}"
+    },
+    "metrics": {
+      "spend": "Ad spend",
+      "spendSubtitle": "{clicks} clicks on the platform",
+      "leads": "Leads from ads",
+      "leadsSubtitle": "{share}% of all new contacts · {organic} organic",
+      "dealsWon": "Deals won",
+      "roas": "ROAS",
+      "roasSubtitle": "Revenue per unit of spend",
+      "roasNoSpend": "No spend synced yet",
+      "linkConversion": "Clicked → messaged",
+      "linkSubtitle": "{matched} of {total} link clicks reached WhatsApp",
+      "linkNoClicks": "No tracked link clicks yet"
+    },
+    "chart": {
+      "title": "Spend, revenue and leads",
+      "description": "Daily. Money on the left axis, leads on the right.",
+      "spend": "Spend",
+      "revenue": "Revenue",
+      "leads": "Leads",
+      "emptyTitle": "Nothing to plot yet",
+      "emptyHint": "Connect an ad account, or wait for the first attributed lead."
+    },
+    "table": {
+      "title": "Performance",
+      "description": "Sorted by spend. Click a column to re-sort.",
+      "level": {
+        "ad": "By ad",
+        "campaign": "By campaign",
+        "platform": "By platform"
+      },
+      "emptyTitle": "No ad data in this period",
+      "emptyHint": "Connect an ad account to pull spend, and make sure your ads point at WhatsApp or at a tracked link.",
+      "col": {
+        "name": "Ad",
+        "spend": "Spend",
+        "leads": "Leads",
+        "cpl": "CPL",
+        "dealsWon": "Won",
+        "cpa": "CPA",
+        "revenue": "Revenue",
+        "roas": "ROAS"
+      }
+    },
+    "accounts": {
+      "title": "Ad accounts",
+      "description": "Where the spend numbers come from.",
+      "connectMeta": "Connect Meta",
+      "connectGoogle": "Connect Google Ads",
+      "syncNow": "Sync now",
+      "syncDone": "Sync finished.",
+      "syncPartial": "Sync finished with {failed} account(s) failing — see the details below.",
+      "syncFailed": "Sync failed.",
+      "emptyTitle": "No ad account connected",
+      "emptyHint": "Without one, leads still get attributed — you just will not see cost, CPL or ROAS.",
+      "lastSync": "synced {when}",
+      "neverSynced": "never synced",
+      "error": "Error",
+      "disconnect": "Disconnect",
+      "status": {
+        "connected": "Connected",
+        "error": "Error",
+        "disconnected": "Disconnected"
+      }
+    },
+    "links": {
+      "title": "Tracked links",
+      "description": "For ads that go through a landing page. The code stamped into the prefilled message is the only thing that survives the jump to WhatsApp.",
+      "newLink": "New link",
+      "emptyTitle": "No tracked links yet",
+      "emptyHint": "Create one and point your landing page’s WhatsApp button at it instead of at wa.me directly.",
+      "clickToChat": "{rate}% messaged",
+      "noClicks": "no clicks yet",
+      "copy": "Copy link",
+      "remove": "Remove",
+      "createFailed": "Could not create the link.",
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "e.g. Google — search brand",
+        "code": "Code",
+        "codePlaceholder": "search-brand",
+        "codeHint": "Appears in the public URL. Lowercase letters, numbers, - and _.",
+        "phone": "Destination number",
+        "phoneHint": "International format, digits only — country code first.",
+        "prefill": "Prefilled message",
+        "prefillPlaceholder": "Hi! I saw your ad and I would like to know more.",
+        "prefillHint": "The tracking code is appended automatically, on its own line.",
+        "submit": "Create link",
+        "cancel": "Cancel"
+      }
+    }
+  },
+  "SignupPage": {
+    "titleJoin": "Create account & join",
+    "title": "Create account",
+    "descJoin": "Verify your email, then accept the invitation to join your team.",
+    "desc": "Get started with CRM Template for WhatsApp",
+    "checkEmailTitle": "Check your email",
+    "checkEmailDesc": "We've sent a confirmation link to <em>{email}</em>. Please check your inbox and click the link to verify your account.",
+    "backToSignIn": "Back to sign in",
+    "fullNameLabel": "Full name",
+    "fullNamePlaceholder": "Jane Doe",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "At least {min} characters",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Repeat your password",
+    "creating": "Creating account...",
+    "submit": "Create account",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errorMismatch": "Passwords do not match",
+    "errorTooShort": "Password must be at least {min} characters"
+  },
+  "ForgotPasswordPage": {
+    "title": "Reset password",
+    "desc": "Enter your email and we'll send you a reset link",
+    "checkEmailTitle": "Check your email",
+    "checkEmailDesc": "We've sent a password reset link to <em>{email}</em>. Please check your inbox.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sending": "Sending...",
+    "submit": "Send reset link",
+    "backToSignIn": "Back to sign in"
+  },
+  "Agents": {
+    "page": {
+      "title": "AI Agents",
+      "description": "Your bring-your-own-key AI agent — set it up, then test it in the playground before it replies to customers in the inbox.",
+      "tabPlayground": "Playground",
+      "tabSetup": "Setup",
+      "tabUsage": "Usage"
+    },
+    "playground": {
+      "title": "Playground",
+      "subtitle": "— test replies as if you were a customer",
+      "reset": "Reset",
+      "emptyTitle": "Send a message to see how your agent would reply.",
+      "emptyHint": "It uses your knowledge base and behaves exactly like the auto-reply bot — including handoff.",
+      "goToSetup": "Not set up yet? Go to Setup",
+      "wouldHandOff": "Would hand off to a human here",
+      "thinking": "Thinking…",
+      "placeholder": "Type a customer message…",
+      "notConfigured": "No agent configured yet — finish Setup first."
+    },
+    "usage": {
+      "title": "Token usage",
+      "description": "Tokens spent on your provider key by drafts and the auto-reply bot. Counts only — no message content is stored here.",
+      "lastDays": "Last {days} days",
+      "emptyTitle": "No AI usage in the last {days} days yet.",
+      "emptyHint": "This fills in as the assistant drafts and auto-replies.",
+      "totalTokens": "Total tokens",
+      "llmCalls": "LLM calls",
+      "autoReply": "Auto-reply",
+      "drafts": "Drafts",
+      "tokensPerDay": "Tokens per day",
+      "byModel": "By model",
+      "chartSeries": "Tokens",
+      "modelSummary": "{tokens} tok · {calls, plural, =1 {# call} other {# calls}}",
+      "truncated": "Showing a partial window — usage is high enough that only the most recent records are summarized here.",
+      "loadFailed": "Failed to load usage"
+    }
+  },
+  "QuickReplies": {
+    "title": "Quick replies",
+    "description": "Reusable snippets — plain text or a saved interactive message — that agents can insert from the inbox composer.",
+    "editTitle": "Edit quick reply",
+    "newTitle": "New quick reply",
+    "namePlaceholder": "e.g. Business hours",
+    "kindText": "Text",
+    "kindInteractive": "Interactive",
+    "textPlaceholder": "The message text to insert",
+    "nameRequired": "Give the quick reply a name.",
+    "updated": "Quick reply updated.",
+    "created": "Quick reply created.",
+    "deleteConfirm": "Delete this quick reply?"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "description": "Conversations other teammates assign to you show up here.",
+    "markAllRead": "Mark all as read",
+    "emptyTitle": "No notifications yet",
+    "emptyHint": "You'll see an alert here when someone assigns you a conversation.",
+    "unread": "Unread",
+    "markReadFailed": "Failed to mark notification as read",
+    "markAllFailed": "Failed to mark all as read"
+  },
+  "JoinPage": {
+    "verifying": "Verifying invitation…",
+    "roleAdmin": "Admin",
+    "roleAgent": "Agent",
+    "roleViewer": "Viewer",
+    "failNotFoundTitle": "Invite not found",
+    "failNotFoundBody": "This link doesn't match a valid invitation. Double-check the URL or ask the person who invited you to send a new one.",
+    "failUsedTitle": "Invite already used",
+    "failUsedBody": "This invitation has already been accepted. If that wasn't you, ask the account admin to send a fresh link.",
+    "failExpiredTitle": "Invite expired",
+    "failExpiredBody": "This invitation has expired. Ask the account admin to send a new one — they take a few seconds to generate.",
+    "failServerTitle": "Something went wrong",
+    "failServerBody": "We couldn't verify this invitation right now. Try refreshing the page in a moment.",
+    "tryAgain": "Try again",
+    "createInstead": "Create a new account instead",
+    "signIn": "Sign in",
+    "invitedTo": "You're invited to <account></account>",
+    "joinAs": "You'll join as <role></role>. Link valid until {date}.",
+    "accepting": "Accepting…",
+    "accept": "Accept invitation",
+    "acceptHint": "Accepting moves your login into <account></account>. Your empty personal account from signup will be cleaned up.",
+    "conflictTitle": "Can't join {account} with this account",
+    "conflictBody": "To join <account></account>, sign out and sign up again with a different email address. The invite link stays valid as long as it hasn't expired.",
+    "staySignedIn": "Stay signed in",
+    "signingOut": "Signing out…",
+    "signOutAndRetry": "Sign out & use a different email",
+    "createAndJoin": "Create account & join",
+    "haveAccount": "I already have an account",
+    "acceptFailed": "Failed to accept invitation",
+    "welcome": "Welcome to the team",
+    "networkError": "Could not reach the server",
+    "signOutFailed": "Could not sign out. Try refreshing the page."
+  },
+  "Interactive": {
+    "kindButtons": "Reply buttons",
+    "kindList": "List",
+    "body": "Body",
+    "bodyPlaceholder": "What the customer reads above the options",
+    "headerOptional": "Header (optional)",
+    "footerOptional": "Footer (optional)",
+    "preview": "Preview",
+    "buttonLabelPlaceholder": "Button label",
+    "addButton": "Add button",
+    "listButtonLabel": "List button label",
+    "sectionTitlePlaceholder": "Section title (optional)",
+    "rowTitlePlaceholder": "Row title",
+    "rowDescriptionPlaceholder": "Description (optional)",
+    "addRow": "Add row",
+    "addSection": "Add section"
   }
 }

@@ -11,6 +11,7 @@ import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply'
 import { dispatchWebhookEvent } from '@/lib/webhooks/deliver'
+import { recordCtwaTouch, recordLinkCodeTouch } from '@/lib/ads/attribution'
 import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
@@ -70,6 +71,18 @@ interface WhatsAppMessage {
   button?: { text?: string; payload?: string }
   /** Present when the customer swipe-replies to one of our messages. */
   context?: { id: string }
+  /**
+   * Present ONLY on the first message a customer sends after tapping a
+   * Click-to-WhatsApp ad (or a CTA on an Instagram/Facebook post). Meta
+   * stamps it server-side, so it is exact attribution with no pixel, no
+   * cookie and nothing for the customer to carry.
+   *
+   * `source_id` is the id of the AD (not the campaign). `ctwa_clid` is
+   * the click identifier — the deduplication key against webhook retries,
+   * and what Meta's Conversions API wants back to close the optimisation
+   * loop. See `MetaReferral` for why every field is optional.
+   */
+  referral?: import('@/lib/ads/types').MetaReferral
 }
 
 interface WhatsAppWebhookEntry {
@@ -737,6 +750,42 @@ async function processMessage(
       message.id
     )
     return
+  }
+
+  // ============================================================
+  // Ad attribution (migration 040).
+  //
+  // Placed AFTER the idempotency guard above on purpose: a retried
+  // delivery must not write a second touch. The `ctwa_clid` / click-token
+  // unique indexes are the belt to this braces — between them, one click
+  // can only ever become one lead, which is what keeps CPL honest.
+  //
+  // Both recorders are best-effort by contract (they log and return null
+  // instead of throwing): attribution is metadata, and a failure here
+  // must never keep the message out of the inbox.
+  // ============================================================
+  const touchContext = {
+    accountId,
+    contactId: contactRecord.id,
+    conversationId: conversation.id,
+    // The message's own timestamp, not `now()`. A webhook that arrives
+    // late — Meta retrying, or our own queue backed up — would otherwise
+    // date the lead to the wrong day and shift it into the wrong report.
+    occurredAt: new Date(parseInt(message.timestamp) * 1000),
+  }
+
+  if (message.referral) {
+    // Meta's own stamp: exact, and the only path that survives without a
+    // landing page in the middle.
+    await recordCtwaTouch(supabaseAdmin(), touchContext, message.referral)
+  } else if (isFirstInboundMessage) {
+    // No referral — this is either organic or someone who came through a
+    // landing page, where the only surviving thread is the code stamped
+    // into the prefilled text. Restricted to the first inbound message:
+    // that is the only one that carries the prefill, and running it on
+    // every message would cost a lookup per message to almost always
+    // find nothing.
+    await recordLinkCodeTouch(supabaseAdmin(), touchContext, contentText)
   }
 
   // Update conversation. The unread bump is done DB-side (migration 037's

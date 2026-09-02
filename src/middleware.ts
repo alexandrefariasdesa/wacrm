@@ -2,6 +2,16 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // The ad-click redirect is anonymous by definition — it is where a paid
+  // click lands, before the visitor is anyone we know. Short-circuit
+  // before touching Supabase: `getUser()` below is a network round trip
+  // to the auth server on every request, and paying for it here would add
+  // latency to the one hop where the visitor is still deciding whether to
+  // bother. It has its own per-IP rate limit.
+  if (request.nextUrl.pathname.startsWith('/api/track/')) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -70,7 +80,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected pages - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
+  const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings', '/ads']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
