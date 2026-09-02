@@ -59,8 +59,10 @@ function getClientIp(request: Request): string {
  */
 function fallbackDestination(): string {
   return (
-    process.env.NEXT_PUBLIC_TRACK_FALLBACK_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_TRACK_FALLBACK_URL?.trim() ||
+    // Mesma variável que o resto do projeto usa para a base pública.
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     'https://wa.me/'
   )
 }

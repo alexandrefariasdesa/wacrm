@@ -62,10 +62,24 @@ export async function consumeOAuthState(
   return timingSafeEqual(a, b)
 }
 
-/** Base pública da aplicação, para montar o `redirect_uri`. Precisa bater
- *  EXATAMENTE com o que está cadastrado no app da Meta / do Google. */
+/**
+ * Base pública da aplicação, para montar o `redirect_uri`.
+ *
+ * `NEXT_PUBLIC_SITE_URL` é a variável que o resto do projeto já usa (ver
+ * a cadeia de resolução em `api/account/invitations`); `NEXT_PUBLIC_APP_URL`
+ * fica como sinônimo aceito, porque é o nome que aparece na documentação
+ * de várias hospedagens e é fácil de setar por engano.
+ *
+ * Diferente das URLs de convite, esta NÃO é derivada do cabeçalho `Host`
+ * da requisição. O `redirect_uri` precisa bater caractere por caractere
+ * com o que está cadastrado no app da Meta / do Google: derivar do
+ * cabeçalho o faria variar por proxy e por domínio de preview, e cada
+ * variação viraria um `redirect_uri mismatch`. Configuração explícita é
+ * a única forma estável.
+ */
 export function appBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
-  )
+  const explicit =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim()
+  return explicit ? explicit.replace(/\/+$/, '') : 'http://localhost:3000'
 }
