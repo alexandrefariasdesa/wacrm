@@ -131,7 +131,7 @@ export async function recordLinkCodeTouch(
     const { data: click } = await db
       .from('ad_clicks')
       .select(
-        'id, account_id, tracking_link_id, platform, gclid, utm_source, utm_medium, utm_campaign, utm_content, utm_term, matched_at',
+        'id, account_id, tracking_link_id, platform, gclid, utm_source, utm_medium, utm_campaign, utm_content, utm_term, ad_external_id, campaign_external_id, matched_at',
       )
       .eq('click_token', token)
       .maybeSingle()
@@ -154,10 +154,39 @@ export async function recordLinkCodeTouch(
     // retry. Um clique gera um toque só.
     if (click.matched_at) return null
 
-    // Herda o vínculo com anúncio/campanha configurado no link.
+    // Resolução do criativo, em duas camadas.
+    //
+    // 1) O id que veio NA URL, posto pela própria plataforma via
+    //    parâmetro dinâmico (`{{ad.id}}` / `{creative}`). É o único que
+    //    distingue criativo a criativo quando uma landing page atende a
+    //    campanha inteira — o caso normal.
+    // 2) O vínculo estático do link, para quem cria um link por
+    //    criativo, ou quando a URL não trouxe nada.
+    //
+    // O da URL vence: ele descreve ESTE clique; o do link descreve a
+    // configuração de quem o criou, que pode estar desatualizada.
     let adId: string | null = null
     let campaignId: string | null = null
     let platform: string = click.platform ?? 'google'
+
+    if (click.ad_external_id) {
+      const { data: ad } = await db
+        .from('ads')
+        .select('id, campaign_id, platform')
+        .eq('account_id', ctx.accountId)
+        .eq('external_id', click.ad_external_id)
+        .maybeSingle()
+      if (ad) {
+        adId = ad.id
+        campaignId = ad.campaign_id
+        platform = ad.platform ?? platform
+      }
+      // Não achar é esperado e não é erro: o anúncio pode ter subido
+      // hoje e o sync ainda não o ter espelhado. O `ad_external_id` cru
+      // é gravado no toque abaixo, e `backfillTouchAdLinks` religa
+      // quando a hierarquia chegar.
+    }
+
     if (click.tracking_link_id) {
       const { data: link } = await db
         .from('tracking_links')
@@ -165,8 +194,8 @@ export async function recordLinkCodeTouch(
         .eq('id', click.tracking_link_id)
         .maybeSingle()
       if (link) {
-        adId = link.ad_id
-        campaignId = link.campaign_id
+        adId = adId ?? link.ad_id
+        campaignId = campaignId ?? link.campaign_id
         platform = link.platform ?? platform
       }
     }
@@ -183,6 +212,12 @@ export async function recordLinkCodeTouch(
         campaign_id: campaignId,
         tracking_link_id: click.tracking_link_id,
         ad_click_id: click.id,
+        // Ids crus preservados mesmo quando o anúncio ainda não existe
+        // localmente — é o que o backfill usa para religar depois, e o
+        // que faz a linha aparecer no painel (com o id à mostra) em vez
+        // de sumir.
+        ad_external_id: click.ad_external_id,
+        campaign_external_id: click.campaign_external_id,
         gclid: click.gclid,
         utm_source: click.utm_source,
         utm_medium: click.utm_medium,

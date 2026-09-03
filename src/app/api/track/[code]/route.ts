@@ -129,6 +129,13 @@ export async function GET(
         utm_campaign: q('utm_campaign'),
         utm_content: q('utm_content'),
         utm_term: q('utm_term'),
+        // Id do anúncio, vindo do parâmetro dinâmico da plataforma
+        // (`{{ad.id}}` na Meta, `{creative}` no Google). É o que permite
+        // CPL por criativo quando uma landing page única atende uma
+        // campanha inteira — sem ele, todo lead cai no anúncio que
+        // estiver fixado no link, e a comparação entre criativos some.
+        ad_external_id: q('ad_id'),
+        campaign_external_id: q('campaign_id'),
         landing_url: q('lp') ?? request.headers.get('referer')?.slice(0, 1024) ?? null,
         referrer: request.headers.get('referer')?.slice(0, 1024) ?? null,
       })

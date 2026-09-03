@@ -20,6 +20,18 @@
      `https://wa.me/55...`, aponte para o link rastreado do wacrm.
   2. Adicione a classe `wa-track` ao botão.
   3. Cole este bloco antes do </body>.
+  4. No ANÚNCIO, mande o id do criativo na URL de destino (é o que
+     permite comparar criativo com criativo):
+
+       Meta   → em "Parâmetros de URL" do anúncio:
+                ad_id={{ad.id}}&campaign_id={{campaign.id}}
+
+       Google → no Sufixo de URL final da campanha:
+                ad_id={creative}&campaign_id={campaignid}
+
+     Sem o passo 4 tudo continua funcionando, mas o painel só consegue
+     separar por CAMPANHA — todos os criativos de uma campanha aparecem
+     somados, e não dá para saber qual cortar.
 
       <a class="wa-track" href="https://SEU-APP/api/track/SEU-CODIGO">
         Falar no WhatsApp
@@ -38,10 +50,12 @@
   // Só os parâmetros que importam. Copiar a querystring inteira traria
   // lixo de qualquer plugin da página para dentro do banco.
   var KEEP = [
-    'gclid',    // Google Ads
-    'gbraid',   // substituto do gclid em iOS/sem consentimento (app)
-    'wbraid',   // idem (web)
-    'fbclid',   // Meta
+    'ad_id',       // id do anúncio — Meta {{ad.id}} / Google {creative}
+    'campaign_id', // id da campanha — Meta {{campaign.id}} / Google {campaignid}
+    'gclid',       // Google Ads
+    'gbraid',      // substituto do gclid em iOS/sem consentimento (app)
+    'wbraid',      // idem (web)
+    'fbclid',      // Meta
     'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'
   ];
 
