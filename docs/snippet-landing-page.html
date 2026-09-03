@@ -1,0 +1,115 @@
+<!--
+  Repasse de origem: landing page -> link rastreado -> WhatsApp
+  =============================================================
+
+  Cole este bloco UMA VEZ na landing page, antes do </body>.
+
+  O que ele resolve
+  -----------------
+  O `gclid` (Google) e o `fbclid` (Meta) chegam na URL da LANDING PAGE,
+  não no link do botão. Se o botão for um href fixo, essa informação fica
+  para trás e o clique é registrado sem saber de qual anúncio veio — o
+  custo nunca casa com o lead, e o painel mostra leads sem CPL.
+
+  Este script copia a querystring da página para o link de rastreio no
+  momento do clique.
+
+  Como usar
+  ---------
+  1. Troque o href do seu botão de WhatsApp: em vez de apontar para
+     `https://wa.me/55...`, aponte para o link rastreado do wacrm.
+  2. Adicione a classe `wa-track` ao botão.
+  3. Cole este bloco antes do </body>.
+
+      <a class="wa-track" href="https://SEU-APP/api/track/SEU-CODIGO">
+        Falar no WhatsApp
+      </a>
+
+  Sem JavaScript o botão continua funcionando: leva para o WhatsApp e o
+  lead ainda é atribuído ao LINK (portanto à campanha). O que se perde é
+  o detalhe do criativo. Por isso o href já vem pronto no HTML, e o
+  script só enriquece.
+-->
+
+<script>
+(function () {
+  'use strict';
+
+  // Só os parâmetros que importam. Copiar a querystring inteira traria
+  // lixo de qualquer plugin da página para dentro do banco.
+  var KEEP = [
+    'gclid',    // Google Ads
+    'gbraid',   // substituto do gclid em iOS/sem consentimento (app)
+    'wbraid',   // idem (web)
+    'fbclid',   // Meta
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'
+  ];
+
+  function decorate(anchor) {
+    // Idempotente: um mesmo botão pode ser processado de novo se a
+    // página re-renderizar. Sem esta marca, os parâmetros seriam
+    // anexados duas vezes.
+    if (anchor.getAttribute('data-wa-tracked') === '1') return;
+
+    var pageParams = new URLSearchParams(window.location.search);
+    var url;
+    try {
+      url = new URL(anchor.href, window.location.origin);
+    } catch (e) {
+      return; // href malformado — melhor não mexer.
+    }
+
+    for (var i = 0; i < KEEP.length; i++) {
+      var value = pageParams.get(KEEP[i]);
+      // Só escreve se a página tem o parâmetro E o link ainda não —
+      // um valor já presente no href foi posto de propósito e vence.
+      if (value && !url.searchParams.has(KEEP[i])) {
+        url.searchParams.set(KEEP[i], value);
+      }
+    }
+
+    // A URL da própria landing page. O servidor tentaria adivinhar pelo
+    // cabeçalho `Referer`, mas ele é removido por boa parte dos
+    // navegadores e por qualquer política de privacidade mais estrita.
+    // Mandar explícito é o único jeito confiável.
+    if (!url.searchParams.has('lp')) {
+      url.searchParams.set('lp', window.location.origin + window.location.pathname);
+    }
+
+    anchor.href = url.toString();
+    anchor.setAttribute('data-wa-tracked', '1');
+  }
+
+  function decorateAll() {
+    var anchors = document.querySelectorAll('a.wa-track');
+    for (var i = 0; i < anchors.length; i++) decorate(anchors[i]);
+  }
+
+  decorateAll();
+
+  // Botões que aparecem depois: seções lazy, pop-up de saída, widget de
+  // chat, qualquer construtor que monte o DOM em etapas. Um script de
+  // uma passada só perderia todos eles.
+  if (window.MutationObserver) {
+    new MutationObserver(decorateAll).observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  // Rede de segurança: mesmo que o observer perca algo, o clique
+  // acontece depois — e aqui ainda dá tempo de decorar o link antes de
+  // o navegador navegar. Captura na fase de captura para rodar antes de
+  // qualquer handler da página.
+  document.addEventListener('click', function (event) {
+    var el = event.target;
+    while (el && el !== document) {
+      if (el.tagName === 'A' && el.classList.contains('wa-track')) {
+        decorate(el);
+        return;
+      }
+      el = el.parentNode;
+    }
+  }, true);
+})();
+</script>

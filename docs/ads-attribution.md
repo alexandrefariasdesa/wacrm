@@ -76,6 +76,29 @@ tolerante de propósito: casa com ou sem colchetes, em qualquer caixa e em
 qualquer posição do texto, porque o WhatsApp deixa editar a mensagem
 pré-preenchida antes de enviar.
 
+### O que vai na landing page
+
+Só trocar o `href` do botão de WhatsApp e colar um bloco. **Nenhum pixel,
+nenhuma tag, nenhum SDK.**
+
+```html
+<a class="wa-track" href="https://SEU-APP/api/track/SEU-CODIGO">
+  Falar no WhatsApp
+</a>
+```
+
+O snippet pronto está em
+[`snippet-landing-page.html`](./snippet-landing-page.html).
+
+Ele existe por um motivo específico: o `gclid` e o `fbclid` chegam na URL
+da **landing page**, não no link do botão. Um `href` fixo os deixa para
+trás — o clique é registrado, mas sem saber de qual anúncio veio, e o
+custo nunca casa com o lead.
+
+Sem JavaScript o botão continua funcionando e o lead ainda é atribuído ao
+LINK (portanto à campanha); o que se perde é o detalhe do criativo. Por
+isso o `href` já vem completo no HTML e o script apenas enriquece.
+
 ### A métrica que só este caminho dá
 
 **Clicou → chamou.** Quantos cliques no link viraram conversa. É a única
