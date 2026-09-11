@@ -75,15 +75,8 @@ function SettingsPageInner() {
     profile: <ProfileForm />,
     security: <SecurityPanel />,
     appearance: <AppearancePanel />,
-    whatsapp: (
-      // Os dois canais na mesma seção: oficial (disparo) em cima,
-      // não-oficial (receptivo) embaixo. São duas conexões da mesma
-      // conta, não dois assuntos.
-      <div className="space-y-6">
-        <WhatsAppConfig />
-        <UnofficialChannel />
-      </div>
-    ),
+    whatsapp: <WhatsAppConfig />,
+    'whatsapp-qr': <UnofficialChannel />,
     templates: <TemplateManager />,
     'quick-replies': <QuickRepliesManager />,
     fields: <FieldsAndTagsPanel />,
