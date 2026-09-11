@@ -216,6 +216,14 @@ export function UnofficialChannel() {
             <Label htmlFor="evo-url">URL do servidor</Label>
             <Input
               id="evo-url"
+              // O navegador enxerga "URL/servidor/instância" como campos
+              // de login e enfia e-mail e senha salvos aqui. Visto na
+              // própria tela: o Chrome preencheu o nome da instância com
+              // o e-mail do usuário. `off` sozinho o Chrome ignora com
+              // frequência; os dois data-* calam 1Password e LastPass.
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               placeholder="https://evo.seudominio.com"
@@ -230,6 +238,9 @@ export function UnofficialChannel() {
             <Label htmlFor="evo-instance">Nome da instância</Label>
             <Input
               id="evo-instance"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               value={instance}
               onChange={(e) => setInstance(e.target.value)}
               placeholder="receptivo"
@@ -246,6 +257,9 @@ export function UnofficialChannel() {
               <Input
                 id="evo-key"
                 type={showKey ? 'text' : 'password'}
+                autoComplete="new-password"
+                data-1p-ignore
+                data-lpignore="true"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={channel ? MASKED : 'A chave do seu servidor'}
@@ -275,6 +289,9 @@ export function UnofficialChannel() {
             <Label htmlFor="evo-number">Número (apenas rótulo)</Label>
             <Input
               id="evo-number"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               value={displayNumber}
               onChange={(e) => setDisplayNumber(e.target.value)}
               placeholder="+55 11 99999-9999"
