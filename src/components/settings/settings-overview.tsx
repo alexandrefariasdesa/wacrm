@@ -125,6 +125,7 @@ export function SettingsOverview({
           .from('whatsapp_config')
           .select('phone_number_id')
           .eq('account_id', acctId)
+          .eq('kind', 'cloud_api')
           .maybeSingle(),
         fetch('/api/whatsapp/config', { cache: 'no-store' }).then((r) => r.json()),
       ]);

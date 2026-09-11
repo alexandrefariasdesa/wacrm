@@ -48,6 +48,11 @@ function makeDb(script: Script): SupabaseClient {
     eq: () => builder,
     order: () => builder,
     limit: () => {
+      // `whatsapp_config` agora faz `.limit(1).maybeSingle()` — a
+      // checagem "a conta tem ALGUM canal?" depois do multicanal (043).
+      // Devolver o próprio builder mantém a cadeia viva até o
+      // maybeSingle abaixo.
+      if (table === 'whatsapp_config') return builder;
       // Only the conversation lookup terminates on `.limit(1)`.
       if (table === 'conversations' && mode === 'select') {
         const row = script.existingConversationByCall

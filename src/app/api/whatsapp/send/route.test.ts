@@ -55,6 +55,8 @@ function makeSupabaseMock() {
             data: {
               id: 'cfg-1',
               account_id: 'acct-1',
+              kind: 'cloud_api',
+              label: 'API oficial',
               phone_number_id: 'PNID-1',
               access_token: 'enc-token',
             },

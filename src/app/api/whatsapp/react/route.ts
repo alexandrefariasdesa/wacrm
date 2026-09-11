@@ -93,6 +93,7 @@ export async function POST(request: Request) {
       .from('whatsapp_config')
       .select('phone_number_id, access_token')
       .eq('account_id', accountId)
+      .eq('kind', 'cloud_api')
       .single();
 
     if (configError || !config) {

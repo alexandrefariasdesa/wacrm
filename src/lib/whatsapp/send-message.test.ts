@@ -214,6 +214,9 @@ function sendPathDb(
   };
   const config = {
     id: 'cfg-1',
+    account_id: 'acct-1',
+    kind: 'cloud_api',
+    label: 'API oficial',
     phone_number_id: 'pn-1',
     access_token: 'token',
   };
@@ -231,7 +234,12 @@ function sendPathDb(
           if (table === 'conversations') captured.conversation = row;
           return builder;
         },
-        maybeSingle: async () => ({ data: null, error: null }),
+        // A resolução de canal (channels.ts) lê por maybeSingle, não
+        // por single: conta sem canal é estado normal, não erro.
+        maybeSingle: async () => ({
+          data: table === 'whatsapp_config' ? config : null,
+          error: null,
+        }),
         single: async () => {
           if (table === 'conversations') {
             return { data: conversation, error: null };

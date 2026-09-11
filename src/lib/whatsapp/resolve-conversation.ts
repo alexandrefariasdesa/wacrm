@@ -42,7 +42,13 @@ export async function resolveConversationByPhone(
   db: SupabaseClient,
   accountId: string,
   phone: string,
-  name?: string | null
+  name?: string | null,
+  /**
+   * Canal por onde esta conversa está entrando (multicanal, 043).
+   * Opcional: quem não passa nada mantém o comportamento anterior, e a
+   * conversa nasce sem canal e o envio cai no oficial.
+   */
+  channelId?: string | null
 ): Promise<ResolvedConversation> {
   const sanitized = sanitizePhoneForMeta(phone);
   if (!isValidE164(sanitized)) {
@@ -55,10 +61,16 @@ export async function resolveConversationByPhone(
 
   // Fail fast (and create nothing) when the account has no WhatsApp
   // connected — the same error the send would raise anyway.
+  // "A conta tem ALGUM canal ligado?" — não importa qual. O `.limit(1)`
+  // é o que mantém o `maybeSingle()` honesto depois do multicanal
+  // (migration 043): sem ele, duas linhas fariam esta checagem de
+  // existência ERRAR, e o efeito seria o oposto do pretendido — a conta
+  // com dois canais pareceria não ter nenhum.
   const { data: config } = await db
     .from('whatsapp_config')
     .select('id')
     .eq('account_id', accountId)
+    .limit(1)
     .maybeSingle();
   if (!config) {
     throw new SendMessageError(
@@ -146,7 +158,8 @@ export async function resolveConversationByPhone(
     db,
     accountId,
     contactId,
-    ownerUserId
+    ownerUserId,
+    channelId ?? null
   );
 
   return { conversationId, contactId, contactCreated };
@@ -162,7 +175,8 @@ async function findOrCreateConversationRow(
   db: SupabaseClient,
   accountId: string,
   contactId: string,
-  ownerUserId: string
+  ownerUserId: string,
+  channelId: string | null
 ): Promise<string> {
   const { data: existing, error: findErr } = await db
     .from('conversations')
@@ -174,7 +188,11 @@ async function findOrCreateConversationRow(
 
   if (findErr) {
     console.error('[resolve-conversation] conversation lookup error:', findErr);
-    throw new SendMessageError('db_error', 'Failed to resolve conversation', 500);
+    throw new SendMessageError(
+      'db_error',
+      'Failed to resolve conversation',
+      500
+    );
   }
 
   if (existing && existing.length > 0) {
@@ -187,6 +205,7 @@ async function findOrCreateConversationRow(
       account_id: accountId,
       user_id: ownerUserId,
       contact_id: contactId,
+      channel_id: channelId,
     })
     .select('id')
     .single();
@@ -205,7 +224,11 @@ async function findOrCreateConversationRow(
       }
     }
     console.error('[resolve-conversation] conversation create error:', convErr);
-    throw new SendMessageError('db_error', 'Failed to create conversation', 500);
+    throw new SendMessageError(
+      'db_error',
+      'Failed to create conversation',
+      500
+    );
   }
 
   return newConv.id;

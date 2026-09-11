@@ -89,6 +89,7 @@ export async function GET() {
       .from('whatsapp_config')
       .select('phone_number_id, access_token, status')
       .eq('account_id', accountId)
+      .eq('kind', 'cloud_api')
       .maybeSingle()
 
     if (configError) {
@@ -276,6 +277,7 @@ export async function POST(request: Request) {
       .from('whatsapp_config')
       .select('id, registered_at, phone_number_id')
       .eq('account_id', accountId)
+      .eq('kind', 'cloud_api')
       .maybeSingle()
 
     const sameNumber =
@@ -371,6 +373,7 @@ export async function POST(request: Request) {
         .from('whatsapp_config')
         .update(baseRow)
         .eq('account_id', accountId)
+        .eq('kind', 'cloud_api')
 
       if (updateError) {
         console.error('Error updating whatsapp_config:', updateError)
@@ -381,14 +384,18 @@ export async function POST(request: Request) {
       }
     } else {
       // Insert with both columns: `account_id` is the tenancy key
-      // (NOT NULL post-017, UNIQUE so duplicates trip the constraint
-      // up-front), `user_id` is the audit column identifying which
-      // member of the account saved the config.
+      // (NOT NULL post-017), `user_id` is the audit column identifying
+      // which member of the account saved the config. `kind` é
+      // redundante com o DEFAULT da coluna (043) e está explícito de
+      // propósito: esta rota configura o canal OFICIAL, e a unicidade
+      // hoje é (account_id, kind), não account_id sozinho.
       const { error: insertError } = await supabase
         .from('whatsapp_config')
         .insert({
           account_id: accountId,
           user_id: user.id,
+          kind: 'cloud_api',
+          label: 'API oficial',
           ...baseRow,
         })
 
@@ -463,6 +470,7 @@ export async function DELETE() {
       .from('whatsapp_config')
       .delete()
       .eq('account_id', accountId)
+      .eq('kind', 'cloud_api')
 
     if (deleteError) {
       console.error('Error deleting whatsapp_config:', deleteError)

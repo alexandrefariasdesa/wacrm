@@ -209,6 +209,10 @@ export async function planBroadcastResume(
     .from('whatsapp_config')
     .select('*')
     .eq('account_id', accountId)
+    // Broadcast é template aprovado pela Meta: existe só no canal
+    // oficial. Sem este filtro o `.single()` erraria assim que a conta
+    // ganhasse o canal não-oficial (multicanal, migration 043).
+    .eq('kind', 'cloud_api')
     .single();
   if (configError || !config) {
     throw new BroadcastError(

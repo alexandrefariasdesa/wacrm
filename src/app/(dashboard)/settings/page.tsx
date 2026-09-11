@@ -12,6 +12,7 @@ import { ProfileForm } from '@/components/settings/profile-form';
 import { SecurityPanel } from '@/components/settings/security-panel';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
+import { UnofficialChannel } from '@/components/settings/unofficial-channel';
 import { TemplateManager } from '@/components/settings/template-manager';
 import { QuickRepliesManager } from '@/components/settings/quick-replies-manager';
 import { FieldsAndTagsPanel } from '@/components/settings/fields-and-tags-panel';
@@ -66,7 +67,7 @@ function SettingsPageInner() {
       appearance: mode.charAt(0).toUpperCase() + mode.slice(1),
       deals: defaultCurrency,
     }),
-    [mode, defaultCurrency],
+    [mode, defaultCurrency]
   );
 
   const panel: Record<SettingsSection, ReactNode> = {
@@ -74,7 +75,15 @@ function SettingsPageInner() {
     profile: <ProfileForm />,
     security: <SecurityPanel />,
     appearance: <AppearancePanel />,
-    whatsapp: <WhatsAppConfig />,
+    whatsapp: (
+      // Os dois canais na mesma seção: oficial (disparo) em cima,
+      // não-oficial (receptivo) embaixo. São duas conexões da mesma
+      // conta, não dois assuntos.
+      <div className="space-y-6">
+        <WhatsAppConfig />
+        <UnofficialChannel />
+      </div>
+    ),
     templates: <TemplateManager />,
     'quick-replies': <QuickRepliesManager />,
     fields: <FieldsAndTagsPanel />,
@@ -86,12 +95,10 @@ function SettingsPageInner() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">
           {t('pageTitle')}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('pageDesc')}
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t('pageDesc')}</p>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">

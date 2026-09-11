@@ -34,7 +34,17 @@ import {
   interactivePayloadPreviewText,
   type InteractiveMessagePayload,
 } from '@/lib/whatsapp/interactive';
-import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption';
+import { encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption';
+import {
+  ChannelError,
+  cloudApiCredentials,
+  evolutionCredentials,
+  resolveOutboundChannel,
+} from '@/lib/whatsapp/channels';
+import {
+  sendMedia as evolutionSendMedia,
+  sendText as evolutionSendText,
+} from '@/lib/whatsapp/providers/evolution';
 import { supabaseAdmin } from '@/lib/flows/admin-client';
 import {
   sanitizePhoneForMeta,
@@ -119,8 +129,13 @@ export function validateSendMessageParams(params: {
   templateName?: string | null;
   interactivePayload?: InteractiveMessagePayload | null;
 }): void {
-  const { messageType, contentText, mediaUrl, templateName, interactivePayload } =
-    params;
+  const {
+    messageType,
+    contentText,
+    mediaUrl,
+    templateName,
+    interactivePayload,
+  } = params;
 
   if (!messageType) {
     throw new SendMessageError('bad_request', 'message_type is required', 400);
@@ -251,29 +266,51 @@ export async function sendMessageToConversation(
     );
   }
 
-  // WhatsApp config, account-scoped.
-  const { data: config, error: configError } = await db
-    .from('whatsapp_config')
-    .select('*')
-    .eq('account_id', accountId)
-    .single();
+  // Canal de saída: o mesmo por onde a conversa entrou (multicanal,
+  // migration 043). Antes isto era um `.single()` na conta inteira —
+  // com dois canais configurados aquilo passaria a errar
+  // ("multiple rows returned") e derrubaria TODO o envio.
+  let channel;
+  try {
+    channel = await resolveOutboundChannel(
+      db,
+      accountId,
+      (conversation.channel_id as string | null) ?? null
+    );
+  } catch (err) {
+    if (err instanceof ChannelError) {
+      throw new SendMessageError('whatsapp_not_configured', err.message, 400);
+    }
+    throw err;
+  }
 
-  if (configError || !config) {
+  const isUnofficial = channel.kind === 'unofficial';
+
+  // Template e interativo são construções da API oficial: a Meta é quem
+  // aprova o template e quem renderiza botões/listas. Numa sessão
+  // Baileys nada disso existe, então recusamos aqui em vez de deixar o
+  // provedor devolver um erro obscuro.
+  if (
+    isUnofficial &&
+    (messageType === 'template' || messageType === 'interactive')
+  ) {
     throw new SendMessageError(
-      'whatsapp_not_configured',
-      'WhatsApp not configured. Please set up your WhatsApp integration first.',
+      'unsupported_on_channel',
+      `Channel "${channel.label ?? channel.id}" is an unofficial connection; ${messageType} messages require the official WhatsApp Business API.`,
       400
     );
   }
 
-  const accessToken = decrypt(config.access_token);
+  // Credenciais do canal. Só o oficial tem token cifrado a migrar.
+  const cloud = isUnofficial ? null : cloudApiCredentials(channel);
+  const accessToken = cloud?.accessToken ?? '';
 
   // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
-  if (isLegacyFormat(config.access_token)) {
+  if (channel.access_token && isLegacyFormat(channel.access_token)) {
     void db
       .from('whatsapp_config')
       .update({ access_token: encrypt(accessToken) })
-      .eq('id', config.id)
+      .eq('id', channel.id)
       .then(({ error }: { error: { message: string } | null }) => {
         if (error) {
           console.warn(
@@ -337,9 +374,33 @@ export async function sendMessageToConversation(
   }
 
   const attempt = async (phone: string): Promise<string> => {
+    // Canal não-oficial: só texto e mídia (template e interativo já
+    // foram recusados acima). O Evolution pode não devolver id de
+    // mensagem; guardamos string vazia, como já era o caso das linhas
+    // antigas sem `message_id`.
+    if (isUnofficial) {
+      const auth = evolutionCredentials(channel);
+      if (isMediaKind) {
+        const result = await evolutionSendMedia(auth, {
+          to: phone,
+          kind: messageType as MediaKind,
+          link: mediaUrl!,
+          caption: contentText || undefined,
+          filename: filename || undefined,
+        });
+        return result.messageId ?? '';
+      }
+      const result = await evolutionSendText(auth, {
+        to: phone,
+        text: contentText!,
+        quotedMessageId: contextMessageId,
+      });
+      return result.messageId ?? '';
+    }
+
     if (messageType === 'template') {
       const result = await sendTemplateMessage({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: cloud!.phoneNumberId,
         accessToken,
         to: phone,
         templateName: templateName!,
@@ -353,7 +414,7 @@ export async function sendMessageToConversation(
     }
     if (isMediaKind) {
       const result = await sendMediaMessage({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: cloud!.phoneNumberId,
         accessToken,
         to: phone,
         kind: messageType as MediaKind,
@@ -368,7 +429,7 @@ export async function sendMessageToConversation(
       const p = interactivePayload!;
       if (p.kind === 'buttons') {
         const result = await sendInteractiveButtons({
-          phoneNumberId: config.phone_number_id,
+          phoneNumberId: cloud!.phoneNumberId,
           accessToken,
           to: phone,
           bodyText: p.body,
@@ -380,7 +441,7 @@ export async function sendMessageToConversation(
         return result.messageId;
       }
       const result = await sendInteractiveList({
-        phoneNumberId: config.phone_number_id,
+        phoneNumberId: cloud!.phoneNumberId,
         accessToken,
         to: phone,
         bodyText: p.body,
@@ -393,7 +454,7 @@ export async function sendMessageToConversation(
       return result.messageId;
     }
     const result = await sendTextMessage({
-      phoneNumberId: config.phone_number_id,
+      phoneNumberId: cloud!.phoneNumberId,
       accessToken,
       to: phone,
       text: contentText!,
@@ -431,10 +492,18 @@ export async function sendMessageToConversation(
 
     if (lastError) throw lastError;
   } catch (err) {
+    const provider = isUnofficial ? 'Evolution API' : 'Meta API';
     const message =
-      err instanceof Error ? err.message : 'Unknown Meta API error';
-    console.error('[send-message] Meta send failed for all variants:', message);
-    throw new SendMessageError('meta_error', `Meta API error: ${message}`, 502);
+      err instanceof Error ? err.message : `Unknown ${provider} error`;
+    console.error(
+      `[send-message] ${provider} send failed for all variants:`,
+      message
+    );
+    throw new SendMessageError(
+      isUnofficial ? 'provider_error' : 'meta_error',
+      `${provider} error: ${message}`,
+      502
+    );
   }
 
   if (workingPhone !== sanitizedPhone) {
@@ -480,6 +549,7 @@ export async function sendMessageToConversation(
       interactive_payload:
         messageType === 'interactive' ? interactivePayload : null,
       message_id: waMessageId,
+      channel_id: channel.id,
       status: 'sent',
       reply_to_message_id: replyToMessageId || null,
     })

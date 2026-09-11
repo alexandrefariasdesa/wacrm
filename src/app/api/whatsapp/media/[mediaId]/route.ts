@@ -53,6 +53,7 @@ export async function GET(
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
+      .eq('kind', 'cloud_api')
       .single()
 
     if (configError || !config) {
