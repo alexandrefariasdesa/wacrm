@@ -371,6 +371,17 @@ export interface PipelineStage {
 
 export type DealStatus = 'open' | 'won' | 'lost';
 
+/** Códigos de motivo de perda (CHECK da migration 045). */
+export const DEAL_LOST_REASONS = [
+  'no_profile',
+  'no_money',
+  'no_response',
+  'thinking',
+  'bought_elsewhere',
+  'other',
+] as const;
+export type DealLostReason = (typeof DEAL_LOST_REASONS)[number];
+
 export interface Deal {
   id: string;
   user_id: string;
@@ -392,6 +403,7 @@ export interface Deal {
   /** Primeira vez que chegou à etapa de qualificação (ou depois dela). Nunca é apagado. */
   qualified_at?: string | null;
   won_at?: string | null;
+  lost_reason?: DealLostReason | null;
   created_at: string;
   updated_at?: string;
   contact?: Contact;

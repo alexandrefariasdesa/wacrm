@@ -51,6 +51,7 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
   const [pipelineId, setPipelineId] = useState<string>('')
   const [stages, setStages] = useState<StageColumn[]>([])
   const [cells, setCells] = useState<Map<string, Map<string, number>>>(new Map())
+  const [lostByKey, setLostByKey] = useState<Map<string, { reason: string; lost: number }[]>>(new Map())
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -86,12 +87,19 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
           map.get(c.group_key)!.set(c.stage_id, c.reached)
         }
         setCells(map)
+        const lost = new Map<string, { reason: string; lost: number }[]>()
+        for (const l of json.lost ?? []) {
+          if (!lost.has(l.group_key)) lost.set(l.group_key, [])
+          lost.get(l.group_key)!.push({ reason: l.reason, lost: l.lost })
+        }
+        setLostByKey(lost)
       })
       .catch((err) => {
         console.error('[ads] falha ao carregar funil:', err)
         if (!cancelled) {
           setStages([])
           setCells(new Map())
+          setLostByKey(new Map())
         }
       })
       .finally(() => {
@@ -115,11 +123,12 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
           campaign: row?.campaign_label ?? null,
           spend: row?.spend ?? 0,
           counts: cells.get(key)!,
+          lost: lostByKey.get(key) ?? [],
         }
       })
       .filter((l) => [...l.counts.values()].some((n) => n > 0))
       .sort((a, b) => b.spend - a.spend)
-  }, [rows, cells])
+  }, [rows, cells, lostByKey])
 
   const hasQualificationStage = stages.some((s) => s.is_qualification)
 
@@ -167,7 +176,7 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 280 + stages.length * 130 }}>
+          <table className="w-full text-sm" style={{ minWidth: 480 + stages.length * 130 }}>
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
                 <th className="px-5 py-3 text-left font-medium">{t(`col.${level}`)}</th>
@@ -181,6 +190,7 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
                     </span>
                   </th>
                 ))}
+                <th className="px-4 py-3 text-left font-medium">{t('lost')}</th>
               </tr>
             </thead>
             <tbody>
@@ -214,6 +224,13 @@ export function AdsStageFunnel({ rows, level, attribution, from, to, currency }:
                       </td>
                     )
                   })}
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {line.lost.length === 0
+                      ? '—'
+                      : line.lost
+                          .map((l) => `${l.lost} ${t(`lostReasons.${l.reason}`)}`)
+                          .join(' · ')}
+                  </td>
                 </tr>
               ))}
             </tbody>

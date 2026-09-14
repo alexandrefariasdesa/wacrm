@@ -572,7 +572,19 @@
       "toastMarkedLost": "Marcado como perdido",
       "toastReopened": "Negócio reaberto",
       "toastFailedDelete": "Não foi possível excluir o negócio",
-      "toastDeleted": "Negócio excluído"
+      "toastDeleted": "Negócio excluído",
+      "lostReason": "Por que perdeu?",
+      "lostReasonPick": "Escolha o motivo",
+      "confirmLost": "Confirmar perda",
+      "lostBecause": "Perdido: {reason}",
+      "lostReasons": {
+        "no_profile": "Sem perfil",
+        "no_money": "Sem dinheiro",
+        "no_response": "Não respondeu",
+        "thinking": "Vai pensar",
+        "bought_elsewhere": "Comprou de outro",
+        "other": "Outro"
+      }
     },
     "settings": {
       "managePipeline": "Gerenciar funil",
@@ -1905,6 +1917,16 @@
         "adset": "Conjunto",
         "campaign": "Campanha",
         "platform": "Plataforma"
+      },
+      "lost": "Perdidos",
+      "lostReasons": {
+        "no_profile": "sem perfil",
+        "no_money": "sem dinheiro",
+        "no_response": "não respondeu",
+        "thinking": "vai pensar",
+        "bought_elsewhere": "comprou de outro",
+        "other": "outro",
+        "unspecified": "sem motivo"
       }
     },
     "capi": {

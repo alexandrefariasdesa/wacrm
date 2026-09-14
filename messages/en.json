@@ -572,7 +572,19 @@
       "toastMarkedLost": "Marked as lost",
       "toastReopened": "Deal reopened",
       "toastFailedDelete": "Failed to delete deal",
-      "toastDeleted": "Deal deleted"
+      "toastDeleted": "Deal deleted",
+      "lostReason": "Why was it lost?",
+      "lostReasonPick": "Pick a reason",
+      "confirmLost": "Confirm lost",
+      "lostBecause": "Lost: {reason}",
+      "lostReasons": {
+        "no_profile": "Not a fit",
+        "no_money": "No budget",
+        "no_response": "No response",
+        "thinking": "Thinking it over",
+        "bought_elsewhere": "Bought elsewhere",
+        "other": "Other"
+      }
     },
     "settings": {
       "managePipeline": "Manage Pipeline",
@@ -1905,6 +1917,16 @@
         "adset": "Ad set",
         "campaign": "Campaign",
         "platform": "Platform"
+      },
+      "lost": "Lost",
+      "lostReasons": {
+        "no_profile": "not a fit",
+        "no_money": "no budget",
+        "no_response": "no response",
+        "thinking": "thinking it over",
+        "bought_elsewhere": "bought elsewhere",
+        "other": "other",
+        "unspecified": "no reason"
       }
     },
     "capi": {

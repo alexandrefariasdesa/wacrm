@@ -5,13 +5,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { CURRENCIES } from "@/lib/currency";
-import type {
-  Contact,
-  Conversation,
-  Deal,
-  DealStatus,
-  PipelineStage,
-  Profile,
+import {
+  DEAL_LOST_REASONS,
+  type Contact,
+  type Conversation,
+  type Deal,
+  type DealLostReason,
+  type DealStatus,
+  type PipelineStage,
+  type Profile,
 } from "@/types";
 import {
   Sheet,
@@ -75,6 +77,11 @@ export function DealForm({
   const [statusAction, setStatusAction] = useState<DealStatus | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // "Perdido" em dois passos: escolher o motivo, depois confirmar. Perda
+  // sem motivo é exatamente o dado que o painel de anúncios não consegue
+  // usar para julgar o criativo.
+  const [choosingLostReason, setChoosingLostReason] = useState(false);
+  const [lostReason, setLostReason] = useState<DealLostReason | "">("");
 
   // Reset the form fields every time the sheet opens or its input
   // props change. This is a legitimate prop-driven sync; the rule is
@@ -213,12 +220,28 @@ export function DealForm({
 
   async function handleStatusChange(status: DealStatus) {
     if (!deal) return;
+    if (status === "lost" && !lostReason) {
+      setChoosingLostReason(true);
+      return;
+    }
     setStatusAction(status);
+    const update: Record<string, unknown> = { status };
+    if (status === "lost") update.lost_reason = lostReason;
+    // O valor digitado e ainda não salvo vai junto com o "Ganho": sem isso
+    // o vendedor digita o valor, clica em Ganho, e a venda entra no painel
+    // de anúncios com receita zero.
+    if (status === "won") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed) && parsed > 0) update.value = parsed;
+      update.currency = currency;
+    }
     const { error } = await supabase
       .from("deals")
-      .update({ status })
+      .update(update)
       .eq("id", deal.id);
     setStatusAction(null);
+    setChoosingLostReason(false);
+    setLostReason("");
     if (error) {
       toast.error(t("toastFailedStatus"));
       return;
@@ -413,6 +436,49 @@ export function DealForm({
                     )}
                   </Button>
                 </div>
+                {choosingLostReason && (
+                  <div className="grid gap-2 rounded-md border border-red-500/30 bg-red-500/5 p-2">
+                    <Label className="text-xs text-muted-foreground">{t("lostReason")}</Label>
+                    <select
+                      value={lostReason}
+                      onChange={(e) => setLostReason(e.target.value as DealLostReason | "")}
+                      className="h-9 w-full rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none focus:border-primary"
+                    >
+                      <option value="">{t("lostReasonPick")}</option>
+                      {DEAL_LOST_REASONS.map((r) => (
+                        <option key={r} value={r}>
+                          {t(`lostReasons.${r}`)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setChoosingLostReason(false);
+                          setLostReason("");
+                        }}
+                        className="flex-1 text-muted-foreground"
+                      >
+                        {t("cancel")}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={() => handleStatusChange("lost")}
+                        disabled={!lostReason || !!statusAction}
+                        className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {t("confirmLost")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {deal.status === "lost" && deal.lost_reason && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("lostBecause", { reason: t(`lostReasons.${deal.lost_reason}`) })}
+                  </p>
+                )}
                 {deal.status && deal.status !== "open" && (
                   <Button
                     type="button"

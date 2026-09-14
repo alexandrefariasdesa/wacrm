@@ -572,7 +572,19 @@
       "toastMarkedLost": "실패로 표시했습니다",
       "toastReopened": "딜이 재개되었습니다",
       "toastFailedDelete": "딜을 삭제하지 못했습니다",
-      "toastDeleted": "딜이 삭제되었습니다"
+      "toastDeleted": "딜이 삭제되었습니다",
+      "lostReason": "실패 사유는?",
+      "lostReasonPick": "사유 선택",
+      "confirmLost": "실패 확인",
+      "lostBecause": "실패: {reason}",
+      "lostReasons": {
+        "no_profile": "대상 아님",
+        "no_money": "예산 없음",
+        "no_response": "응답 없음",
+        "thinking": "고민 중",
+        "bought_elsewhere": "타사 구매",
+        "other": "기타"
+      }
     },
     "settings": {
       "managePipeline": "파이프라인 관리",
@@ -1905,6 +1917,16 @@
         "adset": "광고 세트",
         "campaign": "캠페인",
         "platform": "플랫폼"
+      },
+      "lost": "실패",
+      "lostReasons": {
+        "no_profile": "대상 아님",
+        "no_money": "예산 없음",
+        "no_response": "응답 없음",
+        "thinking": "고민 중",
+        "bought_elsewhere": "타사 구매",
+        "other": "기타",
+        "unspecified": "사유 없음"
       }
     },
     "capi": {

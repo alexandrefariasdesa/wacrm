@@ -11,7 +11,8 @@ import { parseAttributionModel, parseDate, parseLevel } from '@/lib/ads/query-pa
  *   level         — ad | adset | campaign | platform  (padrão: ad)
  *   attribution   — first | last                      (padrão: first)
  *
- * Resposta: { stages: [{id, name, position}], cells: [{group_key, stage_id, reached}] }
+ * Resposta: { stages: [{id, name, position}], cells: [{group_key, stage_id, reached}],
+ *            lost: [{group_key, reason, lost}] }
  */
 
 export const dynamic = 'force-dynamic'
@@ -33,7 +34,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Informe `pipeline_id`' }, { status: 400 })
     }
 
-    const [stages, cells] = await Promise.all([
+    const level = parseLevel(url.searchParams.get('level'))
+    const attribution = parseAttributionModel(url.searchParams.get('attribution'))
+
+    const [stages, cells, lost] = await Promise.all([
       // As etapas vêm da tabela, não da função: um funil sem nenhum lead
       // atribuído ainda precisa mostrar as colunas vazias.
       supabase
@@ -46,12 +50,20 @@ export async function GET(request: Request) {
         p_from: from,
         p_to: to,
         p_pipeline_id: pipelineId,
-        p_level: parseLevel(url.searchParams.get('level')),
-        p_attribution: parseAttributionModel(url.searchParams.get('attribution')),
+        p_level: level,
+        p_attribution: attribution,
+      }),
+      supabase.rpc('ad_lost_reasons', {
+        p_account_id: accountId,
+        p_from: from,
+        p_to: to,
+        p_pipeline_id: pipelineId,
+        p_level: level,
+        p_attribution: attribution,
       }),
     ])
 
-    const failure = stages.error ?? cells.error
+    const failure = stages.error ?? cells.error ?? lost.error
     if (failure) {
       console.error('[ads funnel] consulta falhou:', failure)
       return NextResponse.json(
@@ -66,6 +78,11 @@ export async function GET(request: Request) {
         group_key: c.group_key,
         stage_id: c.stage_id,
         reached: Number(c.reached ?? 0),
+      })),
+      lost: (lost.data ?? []).map((l: Record<string, unknown>) => ({
+        group_key: l.group_key,
+        reason: l.reason,
+        lost: Number(l.lost ?? 0),
       })),
     })
   } catch (err) {
