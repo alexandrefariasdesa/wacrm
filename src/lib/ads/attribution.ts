@@ -276,7 +276,7 @@ export async function backfillTouchAdLinks(
   const externalIds = [...new Set(orphans.map((o) => o.ad_external_id as string))]
   const { data: ads } = await db
     .from('ads')
-    .select('id, external_id, campaign_id')
+    .select('id, external_id, campaign_id, ad_group_id')
     .eq('account_id', accountId)
     .in('external_id', externalIds)
 
@@ -290,7 +290,7 @@ export async function backfillTouchAdLinks(
     if (!ad) continue
     const { error } = await db
       .from('attribution_touches')
-      .update({ ad_id: ad.id, campaign_id: ad.campaign_id })
+      .update({ ad_id: ad.id, campaign_id: ad.campaign_id, ad_group_id: ad.ad_group_id })
       .eq('id', orphan.id)
     if (!error) fixed++
   }

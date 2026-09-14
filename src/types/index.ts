@@ -351,7 +351,10 @@ export interface MessageTemplate {
 export interface Pipeline {
   id: string;
   user_id: string;
+  account_id?: string;
   name: string;
+  /** Lead do formulário (POST /api/v1/leads) já nasce como negócio aqui. */
+  receives_api_leads?: boolean;
   created_at: string;
 }
 
@@ -361,6 +364,8 @@ export interface PipelineStage {
   name: string;
   position: number;
   color: string;
+  /** A etapa que significa "lead qualificado" neste funil (044). */
+  is_qualification?: boolean;
   created_at: string;
 }
 
@@ -384,6 +389,9 @@ export interface Deal {
   notes?: string;
   expected_close_date?: string;
   status?: DealStatus;
+  /** Primeira vez que chegou à etapa de qualificação (ou depois dela). Nunca é apagado. */
+  qualified_at?: string | null;
+  won_at?: string | null;
   created_at: string;
   updated_at?: string;
   contact?: Contact;

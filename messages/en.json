@@ -596,7 +596,12 @@
       "toastMoveOrDeleteDeals": "Move or delete deals in this stage first",
       "toastFailedDeleteStage": "Failed to delete stage",
       "toastFailedDeletePipeline": "Failed to delete pipeline",
-      "toastDeleted": "Pipeline deleted"
+      "toastDeleted": "Pipeline deleted",
+      "qualificationHint": "Click the badge on the stage that means \"qualified lead\". Reaching it (or any later stage) counts as qualified on the ads dashboard.",
+      "markQualification": "Mark as qualification stage",
+      "isQualification": "Qualification stage",
+      "receivesApiLeads": "Receives form leads",
+      "receivesApiLeadsHint": "Every lead that arrives through the leads API (landing page) becomes a deal in the first stage of this pipeline. One pipeline per account."
     },
     "analytics": {
       "totalDeals": "Total Deals",
@@ -1783,7 +1788,7 @@
         "first": "Credit goes to the ad that first brought the person in.",
         "last": "Credit goes to the most recent ad that brought them back."
       },
-      "dateRuleNote": "Spend is counted on the platform’s billing day, leads on the day they messaged, and revenue on the day the deal was won. Short ranges therefore understate ROAS, because deals close after the click.",
+      "dateRuleNote": "Spend counts on the platform billing day, a lead on the day it arrived, and revenue on the day the deal was won. Qualified leads and the stage funnel look at leads that arrived in the period and everything that happened to them since. That is why ROAS looks lower than it is over short periods: the sale closes after the click.",
       "oauthConnected": "{platform} connected — {count} ad account(s).",
       "oauthCancelled": "Connection cancelled.",
       "oauthFailed": "Could not connect: {detail}"
@@ -1799,7 +1804,10 @@
       "roasNoSpend": "No spend synced yet",
       "linkConversion": "Clicked → messaged",
       "linkSubtitle": "{matched} of {total} link clicks reached WhatsApp",
-      "linkNoClicks": "No tracked link clicks yet"
+      "linkNoClicks": "No tracked link clicks yet",
+      "qualified": "Qualified leads",
+      "qualifiedSubtitle": "{cost} each · {rate}% of leads",
+      "qualifiedNone": "No lead has reached the qualification stage yet"
     },
     "chart": {
       "title": "Spend, revenue and leads",
@@ -1816,7 +1824,8 @@
       "level": {
         "ad": "By ad",
         "campaign": "By campaign",
-        "platform": "By platform"
+        "platform": "By platform",
+        "adset": "By ad set"
       },
       "emptyTitle": "No ad data in this period",
       "emptyHint": "Connect an ad account to pull spend, and make sure your ads point at WhatsApp or at a tracked link.",
@@ -1828,7 +1837,10 @@
         "dealsWon": "Won",
         "cpa": "CPA",
         "revenue": "Revenue",
-        "roas": "ROAS"
+        "roas": "ROAS",
+        "qualified": "Qualified",
+        "qualificationRate": "% qualified",
+        "cpql": "Cost/qualified"
       }
     },
     "accounts": {
@@ -1877,6 +1889,39 @@
         "submit": "Create link",
         "cancel": "Cancel"
       }
+    },
+    "funnel": {
+      "title": "Stage funnel",
+      "description": "Of the leads that arrived in the period, how many have passed each stage — and what each one cost.",
+      "pipeline": "Pipeline",
+      "noQualificationStage": "This pipeline has no qualification stage. Open the pipeline, click Manage and tick the badge on the \"Qualified\" stage — without it cost per qualified lead stays empty.",
+      "emptyTitle": "No ad leads in this pipeline for the period",
+      "emptyHint": "Form leads go into the pipeline marked as \"receives form leads\".",
+      "qualificationStage": "Qualification stage",
+      "spent": "{amount} spent",
+      "costEach": "{amount} each",
+      "col": {
+        "ad": "Ad",
+        "adset": "Ad set",
+        "campaign": "Campaign",
+        "platform": "Platform"
+      }
+    },
+    "capi": {
+      "title": "Conversions API",
+      "on": "on",
+      "off": "off",
+      "description": "Tells Meta when an ad lead becomes qualified or a sale, so the campaign learns to find buyers. Data is sent hashed (SHA-256), never in clear text.",
+      "enabled": "Send events to Meta",
+      "dataset": "Pixel (dataset) id",
+      "qualifiedEvent": "Qualified lead event",
+      "wonEvent": "Sale event",
+      "eventNamesHint": "Custom names on purpose: the landing page already sends Lead and checkout already sends Purchase to the same pixel.",
+      "testCode": "Test event code (optional)",
+      "testCodeHint": "From Events Manager → Test events. While set, events only show up in testing and do not count for the campaign.",
+      "save": "Save",
+      "saved": "Saved.",
+      "saveFailed": "Could not save."
     }
   },
   "SignupPage": {

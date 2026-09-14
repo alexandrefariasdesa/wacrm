@@ -28,11 +28,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Trash2,
   Plus,
   GripVertical,
   AlertTriangle,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -79,6 +81,10 @@ export function PipelineSettings({
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Qual etapa é "qualificado". Estado próprio (e não um campo de cada
+  // etapa) porque é uma escolha exclusiva — marcar uma desmarca a outra.
+  const [qualificationStageId, setQualificationStageId] = useState<string | null>(null);
+  const [receivesApiLeads, setReceivesApiLeads] = useState(false);
 
   // Reset form state when the dialog opens or its prop inputs change
   // — legitimate prop-driven sync.
@@ -87,6 +93,8 @@ export function PipelineSettings({
     if (!open) return;
     setName(pipeline.name);
     setLocalStages([...stages].sort((a, b) => a.position - b.position));
+    setQualificationStageId(stages.find((s) => s.is_qualification)?.id ?? null);
+    setReceivesApiLeads(Boolean(pipeline.receives_api_leads));
     setShowDeleteConfirm(false);
   }, [open, pipeline, stages]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -118,17 +126,54 @@ export function PipelineSettings({
       position: i,
     }));
 
+    // As duas marcações são únicas por índice no banco (uma etapa de
+    // qualificação por funil, um funil de entrada por conta), e o índice é
+    // checado linha a linha. Por isso a ordem: primeiro DESMARCA a antiga,
+    // depois marca a nova — ao contrário, a troca estoura unique_violation.
+    const clearOthers = supabase
+      .from("pipeline_stages")
+      .update({ is_qualification: false })
+      .eq("pipeline_id", pipeline.id)
+      .eq("is_qualification", true);
+    const clearQualification = qualificationStageId
+      ? await clearOthers.neq("id", qualificationStageId)
+      : await clearOthers;
+
+    let clearInbox: { error: unknown } = { error: null };
+    if (receivesApiLeads && !pipeline.receives_api_leads) {
+      let q = supabase
+        .from("pipelines")
+        .update({ receives_api_leads: false })
+        .eq("receives_api_leads", true)
+        .neq("id", pipeline.id);
+      if (pipeline.account_id) q = q.eq("account_id", pipeline.account_id);
+      clearInbox = await q;
+    }
+
     const [renameRes, stagesRes] = await Promise.all([
       supabase
         .from("pipelines")
-        .update({ name: name.trim() })
+        .update({ name: name.trim(), receives_api_leads: receivesApiLeads })
         .eq("id", pipeline.id),
       supabase.from("pipeline_stages").upsert(stageRows, { onConflict: "id" }),
     ]);
 
+    const markRes = qualificationStageId
+      ? await supabase
+          .from("pipeline_stages")
+          .update({ is_qualification: true })
+          .eq("id", qualificationStageId)
+      : { error: null };
+
     setSaving(false);
 
-    if (renameRes.error || stagesRes.error) {
+    if (
+      clearQualification.error ||
+      clearInbox.error ||
+      renameRes.error ||
+      stagesRes.error ||
+      markRes.error
+    ) {
       toast.error(t("toastFailedSave"));
       return;
     }
@@ -180,6 +225,7 @@ export function PipelineSettings({
       return;
     }
     setLocalStages(localStages.filter((s) => s.id !== stageId));
+    if (qualificationStageId === stageId) setQualificationStageId(null);
   }
 
   async function handleDeletePipeline() {
@@ -250,6 +296,7 @@ export function PipelineSettings({
 
               <div className="grid gap-2">
                 <Label className="text-muted-foreground">{t("stages")}</Label>
+                <p className="text-xs text-muted-foreground">{t("qualificationHint")}</p>
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -275,6 +322,12 @@ export function PipelineSettings({
                             setLocalStages(updated);
                           }}
                           onRemove={() => handleRemoveStage(stage.id)}
+                          isQualification={qualificationStageId === stage.id}
+                          onToggleQualification={() =>
+                            setQualificationStageId((cur) =>
+                              cur === stage.id ? null : stage.id,
+                            )
+                          }
                           colors={STAGE_COLORS}
                           t={t}
                         />
@@ -325,6 +378,19 @@ export function PipelineSettings({
                 </div>
               </div>
 
+              <label className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+                <span>
+                  <span className="block text-sm text-foreground">{t("receivesApiLeads")}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {t("receivesApiLeadsHint")}
+                  </span>
+                </span>
+                <Switch
+                  checked={receivesApiLeads}
+                  onCheckedChange={(v) => setReceivesApiLeads(Boolean(v))}
+                />
+              </label>
+
               <Button
                 variant="outline"
                 onClick={onCreateNewPipeline}
@@ -369,6 +435,8 @@ function SortableStageRow({
   onNameChange,
   onColorChange,
   onRemove,
+  isQualification,
+  onToggleQualification,
   colors,
   t,
 }: {
@@ -376,6 +444,8 @@ function SortableStageRow({
   onNameChange: (v: string) => void;
   onColorChange: (v: string) => void;
   onRemove: () => void;
+  isQualification: boolean;
+  onToggleQualification: () => void;
   colors: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
@@ -410,6 +480,17 @@ function SortableStageRow({
         onChange={(e) => onNameChange(e.target.value)}
         className="h-7 flex-1 border-transparent bg-transparent text-sm text-foreground focus:border-border"
       />
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={onToggleQualification}
+        aria-pressed={isQualification}
+        aria-label={t("markQualification")}
+        title={isQualification ? t("isQualification") : t("markQualification")}
+        className={isQualification ? "text-primary" : "text-muted-foreground hover:text-foreground"}
+      >
+        <BadgeCheck className="h-3.5 w-3.5" />
+      </Button>
       <Button
         variant="ghost"
         size="icon-xs"

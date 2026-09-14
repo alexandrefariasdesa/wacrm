@@ -5,6 +5,7 @@ import {
   DollarSign,
   Users,
   Trophy,
+  BadgeCheck,
   TrendingUp,
   MousePointerClick,
 } from 'lucide-react'
@@ -20,10 +21,10 @@ interface Props {
 }
 
 /**
- * Os cinco números do topo.
+ * Os seis números do topo.
  *
- * A escolha de quais cinco é o argumento inteiro do painel: investimento,
- * leads, vendas, ROAS e o vazamento do link. Custo por lead e custo por
+ * A escolha de quais seis é o argumento inteiro do painel: investimento,
+ * leads, leads qualificados, vendas, ROAS e o vazamento do link. Custo por lead e custo por
  * venda ficam de fora daqui de propósito — eles variam demais por
  * criativo, e a média de todos juntos esconde exatamente o anúncio caro
  * que precisa ser cortado. Esses dois vivem na tabela, linha a linha.
@@ -33,8 +34,8 @@ export function AdsMetricCards({ overview, loading, currency }: Props) {
 
   if (loading || !overview) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
           <SkeletonCard key={i} />
         ))}
       </div>
@@ -55,7 +56,7 @@ export function AdsMetricCards({ overview, loading, currency }: Props) {
       : null
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
       <MetricCard
         title={t('spend')}
         value={formatCurrency(overview.spend, currency)}
@@ -72,6 +73,22 @@ export function AdsMetricCards({ overview, loading, currency }: Props) {
           share: attributedShare,
           organic: overview.organic_leads.toLocaleString(),
         })}
+      />
+      <MetricCard
+        title={t('qualified')}
+        value={overview.qualified_leads.toLocaleString()}
+        icon={BadgeCheck}
+        subtitle={
+          overview.qualified_leads > 0
+            ? t('qualifiedSubtitle', {
+                cost: formatCurrency(overview.spend / overview.qualified_leads, currency),
+                rate:
+                  overview.attributed_leads > 0
+                    ? Math.round((overview.qualified_leads / overview.attributed_leads) * 100)
+                    : 0,
+              })
+            : t('qualifiedNone')
+        }
       />
       <MetricCard
         title={t('dealsWon')}

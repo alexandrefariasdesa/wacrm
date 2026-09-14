@@ -596,7 +596,12 @@
       "toastMoveOrDeleteDeals": "먼저 이 단계의 딜을 이동하거나 삭제하세요",
       "toastFailedDeleteStage": "단계를 삭제하지 못했습니다",
       "toastFailedDeletePipeline": "파이프라인을 삭제하지 못했습니다",
-      "toastDeleted": "파이프라인이 삭제되었습니다"
+      "toastDeleted": "파이프라인이 삭제되었습니다",
+      "qualificationHint": "\"적격 리드\"를 뜻하는 단계의 배지를 클릭하세요. 그 단계(또는 이후 단계)에 도달하면 광고 대시보드에서 적격으로 집계됩니다.",
+      "markQualification": "적격 단계로 지정",
+      "isQualification": "적격 단계",
+      "receivesApiLeads": "폼 리드 수신",
+      "receivesApiLeadsHint": "리드 API(랜딩 페이지)로 들어오는 모든 리드가 이 파이프라인의 첫 단계에 거래로 생성됩니다. 계정당 하나의 파이프라인만 가능합니다."
     },
     "analytics": {
       "totalDeals": "전체 딜",
@@ -1783,7 +1788,7 @@
         "first": "고객을 처음 데려온 광고에 성과를 귀속합니다.",
         "last": "고객을 가장 최근에 다시 데려온 광고에 성과를 귀속합니다."
       },
-      "dateRuleNote": "지출은 플랫폼 청구일 기준, 리드는 메시지를 보낸 날 기준, 매출은 거래가 성사된 날 기준으로 집계합니다. 그래서 기간이 짧으면 ROAS가 실제보다 낮게 보입니다 — 거래는 클릭보다 늦게 성사되기 때문입니다.",
+      "dateRuleNote": "광고비는 플랫폼 청구일, 리드는 도착한 날, 매출은 거래가 성사된 날 기준으로 집계됩니다. 적격 리드와 단계별 퍼널은 기간 내 도착한 리드와 그 이후 일어난 모든 일을 봅니다. 그래서 짧은 기간에는 ROAS가 실제보다 낮게 보입니다: 판매는 클릭 이후에 성사됩니다.",
       "oauthConnected": "{platform} 연결됨 — 광고 계정 {count}개.",
       "oauthCancelled": "연결이 취소되었습니다.",
       "oauthFailed": "연결하지 못했습니다: {detail}"
@@ -1799,7 +1804,10 @@
       "roasNoSpend": "아직 동기화된 지출이 없습니다",
       "linkConversion": "클릭 → 메시지",
       "linkSubtitle": "링크 클릭 {total}건 중 {matched}건이 WhatsApp에 도달",
-      "linkNoClicks": "아직 추적 링크 클릭이 없습니다"
+      "linkNoClicks": "아직 추적 링크 클릭이 없습니다",
+      "qualified": "적격 리드",
+      "qualifiedSubtitle": "건당 {cost} · 리드의 {rate}%",
+      "qualifiedNone": "아직 적격 단계에 도달한 리드가 없습니다"
     },
     "chart": {
       "title": "지출, 매출, 리드",
@@ -1816,7 +1824,8 @@
       "level": {
         "ad": "광고별",
         "campaign": "캠페인별",
-        "platform": "플랫폼별"
+        "platform": "플랫폼별",
+        "adset": "광고 세트별"
       },
       "emptyTitle": "이 기간에는 광고 데이터가 없습니다",
       "emptyHint": "광고 계정을 연결해 지출을 가져오고, 광고가 WhatsApp이나 추적 링크로 연결되는지 확인하세요.",
@@ -1828,7 +1837,10 @@
         "dealsWon": "성사",
         "cpa": "CPA",
         "revenue": "매출",
-        "roas": "ROAS"
+        "roas": "ROAS",
+        "qualified": "적격",
+        "qualificationRate": "적격 %",
+        "cpql": "적격당 비용"
       }
     },
     "accounts": {
@@ -1877,6 +1889,39 @@
         "submit": "링크 만들기",
         "cancel": "취소"
       }
+    },
+    "funnel": {
+      "title": "단계별 퍼널",
+      "description": "기간 내 도착한 리드 중 각 단계를 통과한 수와 건당 비용.",
+      "pipeline": "파이프라인",
+      "noQualificationStage": "이 파이프라인에는 적격 단계가 지정되지 않았습니다. 파이프라인 관리에서 \"적격\" 단계의 배지를 선택하세요 — 지정하지 않으면 적격당 비용이 비어 있습니다.",
+      "emptyTitle": "이 기간에 이 파이프라인의 광고 리드가 없습니다",
+      "emptyHint": "폼 리드는 \"폼 리드 수신\"으로 지정된 파이프라인에 들어갑니다.",
+      "qualificationStage": "적격 단계",
+      "spent": "{amount} 지출",
+      "costEach": "건당 {amount}",
+      "col": {
+        "ad": "광고",
+        "adset": "광고 세트",
+        "campaign": "캠페인",
+        "platform": "플랫폼"
+      }
+    },
+    "capi": {
+      "title": "전환 API",
+      "on": "켜짐",
+      "off": "꺼짐",
+      "description": "광고 리드가 적격 또는 판매가 되면 Meta에 알려 캠페인이 구매자를 찾도록 학습시킵니다. 데이터는 해시(SHA-256)로만 전송됩니다.",
+      "enabled": "Meta로 이벤트 전송",
+      "dataset": "픽셀(데이터 세트) ID",
+      "qualifiedEvent": "적격 리드 이벤트",
+      "wonEvent": "판매 이벤트",
+      "eventNamesHint": "의도적으로 맞춤 이름을 씁니다: 랜딩 페이지가 이미 Lead를, 결제가 이미 Purchase를 같은 픽셀로 보냅니다.",
+      "testCode": "테스트 이벤트 코드(선택)",
+      "testCodeHint": "이벤트 관리자 → 테스트 이벤트에서 확인. 입력되어 있는 동안 이벤트는 테스트에만 표시되고 캠페인에 반영되지 않습니다.",
+      "save": "저장",
+      "saved": "저장되었습니다.",
+      "saveFailed": "저장하지 못했습니다."
     }
   },
   "SignupPage": {

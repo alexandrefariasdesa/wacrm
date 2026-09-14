@@ -596,7 +596,12 @@
       "toastMoveOrDeleteDeals": "Mova ou exclua os negócios desta etapa primeiro",
       "toastFailedDeleteStage": "Não foi possível excluir a etapa",
       "toastFailedDeletePipeline": "Não foi possível excluir o funil",
-      "toastDeleted": "Funil excluído"
+      "toastDeleted": "Funil excluído",
+      "qualificationHint": "Clique no selo da etapa que significa \"lead qualificado\". Chegar a ela (ou a qualquer etapa depois) conta como qualificado no painel de anúncios.",
+      "markQualification": "Marcar como etapa de qualificação",
+      "isQualification": "Etapa de qualificação",
+      "receivesApiLeads": "Recebe leads do formulário",
+      "receivesApiLeadsHint": "Todo lead que chega pela API de leads (landing page) vira um negócio na primeira etapa deste funil. Só um funil por conta."
     },
     "analytics": {
       "totalDeals": "Total de negócios",
@@ -1783,7 +1788,7 @@
         "first": "O crédito vai para o anúncio que trouxe a pessoa pela primeira vez.",
         "last": "O crédito vai para o anúncio mais recente que a trouxe de volta."
       },
-      "dateRuleNote": "O investimento conta no dia de faturamento da plataforma, o lead no dia em que a pessoa chamou, e a receita no dia em que o negócio foi ganho. Por isso, em períodos curtos o ROAS aparece menor do que é: a venda fecha depois do clique.",
+      "dateRuleNote": "O investimento conta no dia de faturamento da plataforma, o lead no dia em que chegou, e a receita no dia em que o negócio foi ganho. Qualificados e o funil por etapa olham os leads que chegaram no período e tudo o que aconteceu com eles até hoje. Por isso, em períodos curtos o ROAS aparece menor do que é: a venda fecha depois do clique.",
       "oauthConnected": "{platform} conectada — {count} conta(s) de anúncio.",
       "oauthCancelled": "Conexão cancelada.",
       "oauthFailed": "Não foi possível conectar: {detail}"
@@ -1799,7 +1804,10 @@
       "roasNoSpend": "Nenhum investimento sincronizado ainda",
       "linkConversion": "Clicou → chamou",
       "linkSubtitle": "{matched} de {total} cliques no link chegaram no WhatsApp",
-      "linkNoClicks": "Nenhum clique em link rastreado ainda"
+      "linkNoClicks": "Nenhum clique em link rastreado ainda",
+      "qualified": "Leads qualificados",
+      "qualifiedSubtitle": "{cost} cada · {rate}% dos leads",
+      "qualifiedNone": "Nenhum lead chegou à etapa de qualificação ainda"
     },
     "chart": {
       "title": "Investimento, receita e leads",
@@ -1816,7 +1824,8 @@
       "level": {
         "ad": "Por anúncio",
         "campaign": "Por campanha",
-        "platform": "Por plataforma"
+        "platform": "Por plataforma",
+        "adset": "Por conjunto"
       },
       "emptyTitle": "Nenhum dado de anúncio neste período",
       "emptyHint": "Conecte uma conta de anúncio para trazer o investimento, e confira se seus anúncios apontam para o WhatsApp ou para um link rastreado.",
@@ -1828,7 +1837,10 @@
         "dealsWon": "Ganhos",
         "cpa": "CPA",
         "revenue": "Receita",
-        "roas": "ROAS"
+        "roas": "ROAS",
+        "qualified": "Qualif.",
+        "qualificationRate": "% qualif.",
+        "cpql": "Custo/qualif."
       }
     },
     "accounts": {
@@ -1877,6 +1889,39 @@
         "submit": "Criar link",
         "cancel": "Cancelar"
       }
+    },
+    "funnel": {
+      "title": "Funil por etapa",
+      "description": "Dos leads que chegaram no período, quantos já passaram por cada etapa — e quanto custou cada um.",
+      "pipeline": "Funil",
+      "noQualificationStage": "Este funil não tem etapa de qualificação marcada. Abra o funil, clique em Gerenciar e marque o selo na etapa \"Qualificado\" — sem isso o custo por qualificado fica zerado.",
+      "emptyTitle": "Nenhum lead de anúncio neste funil no período",
+      "emptyHint": "Os leads do formulário entram no funil marcado como \"recebe leads do formulário\".",
+      "qualificationStage": "Etapa de qualificação",
+      "spent": "{amount} investidos",
+      "costEach": "{amount} cada",
+      "col": {
+        "ad": "Anúncio",
+        "adset": "Conjunto",
+        "campaign": "Campanha",
+        "platform": "Plataforma"
+      }
+    },
+    "capi": {
+      "title": "API de Conversões",
+      "on": "ligada",
+      "off": "desligada",
+      "description": "Avisa a Meta quando um lead de anúncio vira qualificado ou venda, para a campanha aprender a buscar quem compra. Os dados vão com hash (SHA-256), nunca em claro.",
+      "enabled": "Enviar eventos para a Meta",
+      "dataset": "Id do pixel (conjunto de dados)",
+      "qualifiedEvent": "Evento de lead qualificado",
+      "wonEvent": "Evento de venda",
+      "eventNamesHint": "Nomes personalizados de propósito: a página já envia Lead e o checkout já envia Purchase no mesmo pixel.",
+      "testCode": "Código de teste (opcional)",
+      "testCodeHint": "Do Gerenciador de Eventos → Testar eventos. Enquanto preenchido, os eventos só aparecem no teste e não contam para a campanha.",
+      "save": "Salvar",
+      "saved": "Salvo.",
+      "saveFailed": "Não foi possível salvar."
     }
   },
   "SignupPage": {

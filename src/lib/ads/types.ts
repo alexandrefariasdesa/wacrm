@@ -16,7 +16,7 @@ export type TouchSource = 'ctwa' | 'link_code' | 'manual'
 export type AttributionModel = 'first' | 'last'
 
 /** Nível de agrupamento do painel. */
-export type AdLevel = 'ad' | 'campaign' | 'platform'
+export type AdLevel = 'ad' | 'adset' | 'campaign' | 'platform'
 
 export interface AdAccount {
   id: string
@@ -30,6 +30,12 @@ export interface AdAccount {
   last_synced_at: string | null
   sync_error: string | null
   created_at: string
+  /** Conversions API (044): devolve "lead qualificado" e "venda" à Meta. */
+  capi_enabled: boolean
+  capi_dataset_id: string | null
+  capi_qualified_event: string
+  capi_won_event: string
+  capi_test_event_code: string | null
 }
 
 /**
@@ -77,6 +83,8 @@ export interface AdPerformanceRow {
   impressions: number
   clicks: number
   leads: number
+  /** Dos leads do período, quantos já chegaram à etapa de qualificação. */
+  qualified: number
   conversations: number
   deals_won: number
   revenue: number
@@ -89,6 +97,7 @@ export interface AdOverview {
   impressions: number
   clicks: number
   attributed_leads: number
+  qualified_leads: number
   organic_leads: number
   deals_won: number
   revenue: number
@@ -100,7 +109,17 @@ export interface AdDailyPoint {
   day: string
   spend: number
   leads: number
+  qualified: number
   revenue: number
+}
+
+/** Uma célula do funil por etapa: quantos leads do grupo chegaram à etapa. */
+export interface StageFunnelCell {
+  group_key: string
+  stage_id: string
+  stage_name: string
+  stage_position: number
+  reached: number
 }
 
 export interface TrackingLink {
@@ -128,6 +147,10 @@ export interface TrackingLink {
 export interface DerivedMetrics {
   /** Custo por lead. `null` quando não houve lead. */
   cpl: number | null
+  /** Custo por lead qualificado. `null` quando ninguém qualificou. */
+  cpql: number | null
+  /** Lead -> qualificado. `null` quando não houve lead. */
+  qualificationRate: number | null
   /** Custo por aquisição (negócio ganho). `null` quando não houve venda. */
   cpa: number | null
   /** Retorno sobre o investimento em anúncio. `null` quando não houve gasto. */
@@ -149,11 +172,15 @@ export interface DerivedMetrics {
 export function deriveMetrics(row: {
   spend: number
   leads: number
+  qualified?: number
   deals_won: number
   revenue: number
 }): DerivedMetrics {
+  const qualified = row.qualified ?? 0
   return {
     cpl: row.leads > 0 ? row.spend / row.leads : null,
+    cpql: qualified > 0 ? row.spend / qualified : null,
+    qualificationRate: row.leads > 0 ? qualified / row.leads : null,
     cpa: row.deals_won > 0 ? row.spend / row.deals_won : null,
     roas: row.spend > 0 ? row.revenue / row.spend : null,
     conversionRate: row.leads > 0 ? row.deals_won / row.leads : null,

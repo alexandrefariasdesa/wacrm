@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { AdsMetricCards } from '@/components/ads/ads-metric-cards'
 import { AdsChart } from '@/components/ads/ads-chart'
 import { AdsTable } from '@/components/ads/ads-table'
+import { AdsStageFunnel } from '@/components/ads/ads-stage-funnel'
 import { AdAccountsPanel } from '@/components/ads/ad-accounts-panel'
 import { TrackingLinksPanel } from '@/components/ads/tracking-links-panel'
 import type {
@@ -186,6 +187,15 @@ export default function AdsPage() {
         loading={loading}
         level={level}
         onLevelChange={setLevel}
+        currency={defaultCurrency}
+      />
+
+      <AdsStageFunnel
+        rows={rows}
+        level={level}
+        attribution={attribution}
+        from={from}
+        to={to}
         currency={defaultCurrency}
       />
 

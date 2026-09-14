@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentAccount, toErrorResponse } from '@/lib/auth/account'
-import type { AdLevel, AttributionModel } from '@/lib/ads/types'
+import { parseAttributionModel, parseDate, parseLevel } from '@/lib/ads/query-params'
 
 /**
  * Os números do painel de anúncios.
@@ -12,24 +12,11 @@ import type { AdLevel, AttributionModel } from '@/lib/ads/types'
  *
  * Query params:
  *   from, to      — YYYY-MM-DD (obrigatórios)
- *   level         — ad | campaign | platform  (padrão: ad)
+ *   level         — ad | adset | campaign | platform  (padrão: ad)
  *   attribution   — first | last              (padrão: first)
  */
 
 export const dynamic = 'force-dynamic'
-
-const LEVELS: AdLevel[] = ['ad', 'campaign', 'platform']
-const MODELS: AttributionModel[] = ['first', 'last']
-
-/** YYYY-MM-DD, e uma data que existe de verdade. */
-function parseDate(value: string | null): string | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
-  const d = new Date(`${value}T00:00:00Z`)
-  if (Number.isNaN(d.getTime())) return null
-  // Rejeita 2026-02-31: o Date "corrige" para 03-03 em silêncio, e a
-  // janela consultada deixaria de ser a que o usuário pediu.
-  return d.toISOString().slice(0, 10) === value ? value : null
-}
 
 export async function GET(request: Request) {
   try {
@@ -51,12 +38,8 @@ export async function GET(request: Request) {
       )
     }
 
-    const levelParam = url.searchParams.get('level') as AdLevel | null
-    const level: AdLevel = levelParam && LEVELS.includes(levelParam) ? levelParam : 'ad'
-
-    const modelParam = url.searchParams.get('attribution') as AttributionModel | null
-    const attribution: AttributionModel =
-      modelParam && MODELS.includes(modelParam) ? modelParam : 'first'
+    const level = parseLevel(url.searchParams.get('level'))
+    const attribution = parseAttributionModel(url.searchParams.get('attribution'))
 
     // As três em paralelo: são independentes e a mais lenta manda no
     // tempo de resposta.
@@ -111,6 +94,7 @@ export async function GET(request: Request) {
         impressions: num(r.impressions),
         clicks: num(r.clicks),
         leads: num(r.leads),
+        qualified: num(r.qualified),
         conversations: num(r.conversations),
         deals_won: num(r.deals_won),
       })),
@@ -118,6 +102,7 @@ export async function GET(request: Request) {
         day: p.day,
         spend: num(p.spend),
         leads: num(p.leads),
+        qualified: num(p.qualified),
         revenue: num(p.revenue),
       })),
       level,

@@ -23,7 +23,8 @@ export const dynamic = 'force-dynamic'
  *  desenho — não há motivo para um token cifrado trafegar até o browser,
  *  e uma vez na resposta ele acabaria em log de proxy e em devtools. */
 const SAFE_COLUMNS =
-  'id, platform, external_id, name, currency, timezone, login_customer_id, status, last_synced_at, sync_error, created_at'
+  'id, platform, external_id, name, currency, timezone, login_customer_id, status, last_synced_at, sync_error, created_at, ' +
+  'capi_enabled, capi_dataset_id, capi_qualified_event, capi_won_event, capi_test_event_code'
 
 export async function GET() {
   try {

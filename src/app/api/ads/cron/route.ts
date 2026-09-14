@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { syncAllAdAccounts } from '@/lib/ads/sync'
+import { processConversionEvents } from '@/lib/ads/capi'
 
 /**
  * Sync agendado de TODAS as contas de anúncio, de todos os tenants.
@@ -43,10 +44,14 @@ export async function GET(request: Request) {
 
   try {
     const results = await syncAllAdAccounts(admin)
+    // Depois do sync: a fila da Conversions API precisa do anúncio já
+    // espelhado para saber que o contato veio da Meta.
+    const conversions = await processConversionEvents(admin)
     return NextResponse.json({
       synced: results.length,
       failed: results.filter((r) => r.error).length,
       results,
+      conversions,
     })
   } catch (err) {
     console.error('[ads cron] falhou:', err)

@@ -20,6 +20,9 @@ interface Props {
 type SortKey =
   | 'spend'
   | 'leads'
+  | 'qualified'
+  | 'cpql'
+  | 'qualificationRate'
   | 'deals_won'
   | 'revenue'
   | 'cpl'
@@ -27,7 +30,7 @@ type SortKey =
   | 'roas'
 
 /**
- * A tabela por anúncio / campanha / plataforma.
+ * A tabela por anúncio / conjunto / campanha / plataforma.
  *
  * Ordenação padrão por gasto: a pergunta que se faz abrindo esta tela é
  * "para onde está indo o dinheiro", e só depois "o que ele trouxe".
@@ -72,7 +75,7 @@ export function AdsTable({ rows, loading, level, onLevelChange, currency }: Prop
     }
   }
 
-  const levels: AdLevel[] = ['ad', 'campaign', 'platform']
+  const levels: AdLevel[] = ['ad', 'adset', 'campaign', 'platform']
 
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -111,17 +114,20 @@ export function AdsTable({ rows, loading, level, onLevelChange, currency }: Prop
           <EmptyState title={t('emptyTitle')} hint={t('emptyHint')} icon={BarChart3} />
         </div>
       ) : (
-        // A tabela tem 9 colunas numéricas e não cabe em tela de celular.
+        // A tabela tem 11 colunas numéricas e não cabe em tela de celular.
         // O scroll fica NESTE contêiner e não no body: uma página que
         // rola de lado inteira é muito pior que uma tabela que rola.
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] text-sm">
+          <table className="w-full min-w-[1080px] text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
                 <th className="px-5 py-3 text-left font-medium">{t('col.name')}</th>
                 <SortableTh label={t('col.spend')} active={sortKey === 'spend'} desc={desc} onClick={() => toggleSort('spend')} />
                 <SortableTh label={t('col.leads')} active={sortKey === 'leads'} desc={desc} onClick={() => toggleSort('leads')} />
                 <SortableTh label={t('col.cpl')} active={sortKey === 'cpl'} desc={desc} onClick={() => toggleSort('cpl')} />
+                <SortableTh label={t('col.qualified')} active={sortKey === 'qualified'} desc={desc} onClick={() => toggleSort('qualified')} />
+                <SortableTh label={t('col.qualificationRate')} active={sortKey === 'qualificationRate'} desc={desc} onClick={() => toggleSort('qualificationRate')} />
+                <SortableTh label={t('col.cpql')} active={sortKey === 'cpql'} desc={desc} onClick={() => toggleSort('cpql')} />
                 <SortableTh label={t('col.dealsWon')} active={sortKey === 'deals_won'} desc={desc} onClick={() => toggleSort('deals_won')} />
                 <SortableTh label={t('col.cpa')} active={sortKey === 'cpa'} desc={desc} onClick={() => toggleSort('cpa')} />
                 <SortableTh label={t('col.revenue')} active={sortKey === 'revenue'} desc={desc} onClick={() => toggleSort('revenue')} />
@@ -153,6 +159,17 @@ export function AdsTable({ rows, loading, level, onLevelChange, currency }: Prop
                   <Num>{row.leads.toLocaleString()}</Num>
                   <Num muted={row.cpl === null}>
                     {row.cpl === null ? '—' : formatCurrency(row.cpl, currency)}
+                  </Num>
+                  <Num>{row.qualified.toLocaleString()}</Num>
+                  <Num muted={row.qualificationRate === null}>
+                    {row.qualificationRate === null
+                      ? '—'
+                      : `${Math.round(row.qualificationRate * 100)}%`}
+                  </Num>
+                  {/* O número que decide o teste de criativo: lead barato
+                      que ninguém qualifica é o anúncio mais caro da conta. */}
+                  <Num muted={row.cpql === null}>
+                    {row.cpql === null ? '—' : formatCurrency(row.cpql, currency)}
                   </Num>
                   <Num>{row.deals_won.toLocaleString()}</Num>
                   <Num muted={row.cpa === null}>

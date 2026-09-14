@@ -7,6 +7,28 @@ import { deriveMetrics } from './types'
  * e a diferença entre `0` e `null` aqui não é estética: um CPL exibido
  * como "R$ 0" seria lido como "lead de graça" e o anúncio ficaria no ar.
  */
+describe('deriveMetrics — qualificados', () => {
+  it('calcula custo por qualificado e taxa de qualificação', () => {
+    const m = deriveMetrics({ spend: 900, leads: 30, qualified: 6, deals_won: 1, revenue: 2000 })
+    expect(m.cpql).toBe(150)
+    expect(m.qualificationRate).toBe(0.2)
+  })
+
+  it('devolve null — nunca 0 — quando ninguém qualificou', () => {
+    // Criativo que traz 40 leads e nenhum qualificado não é "qualificado
+    // de graça": é o criativo que precisa ser cortado.
+    const m = deriveMetrics({ spend: 900, leads: 40, qualified: 0, deals_won: 0, revenue: 0 })
+    expect(m.cpql).toBeNull()
+    expect(m.qualificationRate).toBe(0)
+  })
+
+  it('linhas sem a coluna (resposta antiga) não quebram', () => {
+    const m = deriveMetrics({ spend: 100, leads: 10, deals_won: 0, revenue: 0 })
+    expect(m.cpql).toBeNull()
+    expect(m.cpl).toBe(10)
+  })
+})
+
 describe('deriveMetrics', () => {
   it('calcula as quatro razões no caso normal', () => {
     const m = deriveMetrics({ spend: 1000, leads: 50, deals_won: 5, revenue: 4000 })

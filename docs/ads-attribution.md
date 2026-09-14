@@ -233,11 +233,70 @@ ser verdade porque alguém desconectou a integração.
 
 ---
 
+## Funil comercial: custo por etapa (migration 044)
+
+O painel mede até o **lead qualificado** e cada etapa do funil, não só
+lead e venda.
+
+**Configurar (uma vez, em Funis → Gerenciar):**
+
+1. Clique no selo da etapa que significa "lead qualificado". Chegar a ela
+   **ou a qualquer etapa depois** carimba `deals.qualified_at`.
+2. Ligue "Recebe leads do formulário" no funil comercial. Todo
+   `POST /api/v1/leads` cria o negócio na primeira etapa dele (ou reusa o
+   negócio aberto da mesma pessoa).
+
+**O que fica gravado:**
+
+- `deal_stage_events` — toda entrada em etapa e toda mudança de status,
+  por trigger, com nome e posição da etapa no momento e quem mexeu.
+  Imutável: não há policy de escrita.
+- `deals.qualified_at` — nunca é apagado. Lead que qualificou e depois foi
+  perdido custou como qualificado.
+- Marcar a etapa com o funil já rodando preenche `qualified_at` dos
+  negócios que já passaram dela (pela data do histórico).
+
+**Regra de data dos qualificados:** coorte do lead. "Qualificados" e o
+funil por etapa contam os leads que **chegaram no período** e olham tudo o
+que aconteceu com eles até hoje. A receita segue pelo dia do ganho.
+
+**No painel:** colunas Qualif., % qualif. e Custo/qualif.; nível "Por
+conjunto"; e o **Funil por etapa** (`ad_stage_funnel`) — criativos nas
+linhas, etapas nas colunas, com o custo por lead em cada etapa.
+
+### Conversions API
+
+Quando `qualified_at` ou `won_at` é carimbado, um trigger põe o evento em
+`conversion_events` (um por conta Meta com a CAPI ligada; `event_id =
+<deal>:<qualified|won>`, então reabrir e ganhar de novo não duplica). O
+cron `/api/ads/cron` envia em lote, depois do sync.
+
+- Nomes padrão **personalizados** (`LeadQualificado`, `VendaFechada`): a
+  landing page já manda `Lead` e o checkout já manda `Purchase` no mesmo
+  pixel.
+- `action_source: system_generated`; e-mail, telefone e id do contato vão
+  com SHA-256; `fbc` vem do cookie `_fbc` da página ou é montado do
+  `fbclid`.
+- Pula (status `skipped`, com o motivo): evento com mais de 7 dias (a Meta
+  recusaria o lote), contato sem toque da Meta, nada para casar.
+- O token é o mesmo da conta de anúncio; ele precisa de acesso ao pixel.
+- Configuração em Anúncios → Contas de anúncio → API de Conversões. Com o
+  código de teste preenchido, os eventos aparecem em "Testar eventos" e não
+  entram na otimização.
+
+### O que a landing page precisa mandar em `attribution`
+
+`utm_*`, `fbclid`, `ad_id`, `adset_id`, `campaign_id`, `placement`
+(parâmetros de URL do anúncio: `ad_id={{ad.id}}&adset_id={{adset.id}}&campaign_id={{campaign.id}}&placement={{placement}}`)
+e os cookies `fbc` (`_fbc`) e `fbp` (`_fbp`). `fbp` sozinho não conta como
+origem de anúncio — o pixel grava em todo visitante.
+
+---
+
 ## O que ainda não faz
 
-- **Não devolve conversão para as plataformas.** O `ctwa_clid` é
-  guardado justamente para isso (é o que a Conversions API da Meta pede),
-  mas o envio não está implementado. Hoje o dado só entra.
+- **Não devolve conversão para o Google.** A Meta recebe lead qualificado
+  e venda pela Conversions API (acima); o Google Ads não.
 - **Não converte moeda.** Se a conta de anúncio reporta em USD e os
   negócios estão em BRL, o painel mostra as duas moedas sem converter —
   melhor do que aplicar uma taxa inventada.

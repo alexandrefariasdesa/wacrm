@@ -11,7 +11,7 @@
  */
 
 const META_API_VERSION = 'v21.0'
-const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
+export const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 
 export class MetaAdsError extends Error {
   constructor(

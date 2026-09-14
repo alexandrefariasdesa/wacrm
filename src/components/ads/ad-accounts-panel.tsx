@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   AlertTriangle,
+  ChevronDown,
   Megaphone,
   Loader2,
   Plug,
@@ -12,6 +13,8 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { Skeleton } from '@/components/dashboard/skeleton'
 import { cn } from '@/lib/utils'
@@ -128,10 +131,8 @@ export function AdAccountsPanel({ canManage }: { canManage: boolean }) {
         ) : (
           <ul className="space-y-2">
             {accounts.map((a) => (
-              <li
-                key={a.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-4 py-3"
-              >
+              <li key={a.id} className="rounded-lg border border-border">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   {a.platform === 'meta' ? (
                     <Megaphone className="h-4 w-4 shrink-0 text-[#0866FF]" />
@@ -188,11 +189,127 @@ export function AdAccountsPanel({ canManage }: { canManage: boolean }) {
                     </Button>
                   ) : null}
                 </div>
+              </div>
+              {a.platform === 'meta' && canManage ? (
+                <CapiSettings account={a} onSaved={load} />
+              ) : null}
               </li>
             ))}
           </ul>
         )}
       </div>
     </section>
+  )
+}
+
+/**
+ * Conversions API da conta: para onde vão "lead qualificado" e "venda".
+ *
+ * Fechado por padrão — é configuração de uma vez só, e aberto empurraria a
+ * lista de contas para baixo da dobra.
+ */
+function CapiSettings({ account, onSaved }: { account: AdAccount; onSaved: () => void }) {
+  const t = useTranslations('Ads.capi')
+  const [open, setOpen] = useState(false)
+  const [enabled, setEnabled] = useState(account.capi_enabled)
+  const [dataset, setDataset] = useState(account.capi_dataset_id ?? '')
+  const [qualifiedEvent, setQualifiedEvent] = useState(account.capi_qualified_event)
+  const [wonEvent, setWonEvent] = useState(account.capi_won_event)
+  const [testCode, setTestCode] = useState(account.capi_test_event_code ?? '')
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  const save = async () => {
+    setSaving(true)
+    setFeedback(null)
+    try {
+      const res = await fetch(`/api/ads/accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          capi_dataset_id: dataset,
+          capi_qualified_event: qualifiedEvent,
+          capi_won_event: wonEvent,
+          capi_test_event_code: testCode,
+          capi_enabled: enabled,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setFeedback(json.error ?? t('saveFailed'))
+      } else {
+        setFeedback(t('saved'))
+        onSaved()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-4 py-2 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <span>
+          {t('title')} · {account.capi_enabled ? t('on') : t('off')}
+        </span>
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open ? (
+        <div className="grid gap-3 px-4 pb-4 text-xs">
+          <p className="text-muted-foreground">{t('description')}</p>
+          <label className="flex items-center justify-between gap-3">
+            <span className="text-foreground">{t('enabled')}</span>
+            <Switch checked={enabled} onCheckedChange={(v) => setEnabled(Boolean(v))} />
+          </label>
+          <label className="grid gap-1">
+            <span className="text-foreground">{t('dataset')}</span>
+            <Input
+              value={dataset}
+              onChange={(e) => setDataset(e.target.value)}
+              inputMode="numeric"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder="1926024384554770"
+            />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1">
+              <span className="text-foreground">{t('qualifiedEvent')}</span>
+              <Input value={qualifiedEvent} onChange={(e) => setQualifiedEvent(e.target.value)} autoComplete="off" />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-foreground">{t('wonEvent')}</span>
+              <Input value={wonEvent} onChange={(e) => setWonEvent(e.target.value)} autoComplete="off" />
+            </label>
+          </div>
+          <p className="text-muted-foreground">{t('eventNamesHint')}</p>
+          <label className="grid gap-1">
+            <span className="text-foreground">{t('testCode')}</span>
+            <Input
+              value={testCode}
+              onChange={(e) => setTestCode(e.target.value)}
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              placeholder="TEST12345"
+            />
+            <span className="text-muted-foreground">{t('testCodeHint')}</span>
+          </label>
+          <div className="flex items-center justify-end gap-3">
+            {feedback ? <span className="text-muted-foreground">{feedback}</span> : null}
+            <Button size="sm" onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t('save')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   )
 }
