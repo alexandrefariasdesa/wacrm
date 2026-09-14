@@ -194,3 +194,41 @@ describe('classifyEvolutionEvent', () => {
     ).toBe('ignored');
   });
 });
+
+describe('classifyEvolutionEvent — respostas de botão', () => {
+  function textOfReply(message: Record<string, unknown>) {
+    const event = classifyEvolutionEvent(
+      upsert({ key: { remoteJid: JID, fromMe: false, id: 'BTN1' }, message })
+    );
+    if (event.kind !== 'message') throw new Error(`ignored: ${JSON.stringify(event)}`);
+    return [event.message.contentType, event.message.text];
+  }
+
+  it('keeps a template quick-reply tap (the lead first message) as text', () => {
+    // Formato real capturado no servidor em 14/09/2026.
+    expect(
+      textOfReply({
+        messageContextInfo: { threadId: [] },
+        templateButtonReplyMessage: {
+          selectedId: 'ACT::a077594f0e9e969820d52eda05bd6fd7',
+          selectedIndex: 0,
+          selectedDisplayText: 'VER DETALHES',
+        },
+      })
+    ).toEqual(['text', 'VER DETALHES']);
+  });
+
+  it('falls back to the button id when there is no display text', () => {
+    expect(
+      textOfReply({ templateButtonReplyMessage: { selectedId: 'ACT::x' } })
+    ).toEqual(['text', 'ACT::x']);
+  });
+
+  it.each([
+    [{ buttonsResponseMessage: { selectedDisplayText: 'Sim' } }, 'Sim'],
+    [{ listResponseMessage: { title: 'Plano anual' } }, 'Plano anual'],
+    [{ interactiveResponseMessage: { body: { text: 'Quero' } } }, 'Quero'],
+  ])('reads %j', (message, expected) => {
+    expect(textOfReply(message)).toEqual(['text', expected]);
+  });
+});

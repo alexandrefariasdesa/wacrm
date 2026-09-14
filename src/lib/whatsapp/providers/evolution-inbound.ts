@@ -46,7 +46,31 @@ interface EvolutionMessageBody {
   videoMessage?: { caption?: string };
   documentMessage?: { caption?: string; fileName?: string };
   audioMessage?: unknown;
+  // Toque em botão. Quem dispara template com botão por este número recebe
+  // a resposta nestes formatos, e para o lead tocar em "VER DETALHES" é a
+  // PRIMEIRA mensagem dele — descartá-la sumia com o lead inteiro.
+  templateButtonReplyMessage?: { selectedDisplayText?: string; selectedId?: string };
+  buttonsResponseMessage?: { selectedDisplayText?: string; selectedButtonId?: string };
+  listResponseMessage?: {
+    title?: string;
+    singleSelectReply?: { selectedRowId?: string };
+  };
+  interactiveResponseMessage?: { body?: { text?: string } };
   [k: string]: unknown;
+}
+
+/** Texto do botão/opção escolhido, quando a mensagem é um toque em botão. */
+function replyTextOf(body: EvolutionMessageBody): string | null {
+  return (
+    body.templateButtonReplyMessage?.selectedDisplayText ??
+    body.templateButtonReplyMessage?.selectedId ??
+    body.buttonsResponseMessage?.selectedDisplayText ??
+    body.buttonsResponseMessage?.selectedButtonId ??
+    body.listResponseMessage?.title ??
+    body.listResponseMessage?.singleSelectReply?.selectedRowId ??
+    body.interactiveResponseMessage?.body?.text ??
+    null
+  );
 }
 
 interface EvolutionWebhookPayload {
@@ -79,6 +103,7 @@ function contentTypeOf(
 ): InboundEvolutionMessage['contentType'] {
   if (!body) return 'unknown';
   if (body.conversation || body.extendedTextMessage) return 'text';
+  if (replyTextOf(body)) return 'text';
   if (body.imageMessage) return 'image';
   if (body.videoMessage) return 'video';
   if (body.audioMessage) return 'audio';
@@ -94,7 +119,7 @@ function textOf(body: EvolutionMessageBody | undefined): string | null {
     body.imageMessage?.caption ??
     body.videoMessage?.caption ??
     body.documentMessage?.caption ??
-    null
+    replyTextOf(body)
   );
 }
 
