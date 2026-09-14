@@ -6,6 +6,7 @@ import {
   hasAttribution,
   mergeTagNames,
   buildClickRow,
+  proposedToken,
 } from './leads';
 
 describe('parseAttribution', () => {
@@ -74,5 +75,16 @@ describe('buildClickRow', () => {
       landing_url: '/o',
     });
     expect(row.matched_at).toBeTruthy();
+  });
+});
+
+describe('proposedToken', () => {
+  it('accepts a Crockford token, uppercased', () => {
+    expect(proposedToken('k7m2qx')).toBe('K7M2QX');
+  });
+  it('rejects ambiguous letters, wrong length and garbage', () => {
+    expect(proposedToken('K7M2QI')).toBeNull(); // I não existe no alfabeto
+    expect(proposedToken('K7M2Q')).toBeNull();
+    expect(proposedToken(123)).toBeNull();
   });
 });

@@ -7,7 +7,8 @@
 // devolve o token que vai carimbado na mensagem do WhatsApp.
 //
 // Corpo:
-//   { phone, name?, email?, tags?: string[], attribution?: {...} }
+//   { phone, name?, email?, tags?: string[], attribution?: {...},
+//     click_token?: "ABC123" }   // token proposto (Crockford base32, 6)
 // Resposta 201/200:
 //   { data: { contact: ApiContact, created, click_token, whatsapp_tag } }
 //
@@ -29,6 +30,7 @@ import {
   hasAttribution,
   mergeTagNames,
   buildClickRow,
+  proposedToken,
 } from '@/lib/api/v1/leads';
 import { formatClickToken } from '@/lib/ads/click-token';
 
@@ -107,10 +109,17 @@ export async function POST(request: Request) {
 
     // Atribuição, em melhor esforço.
     const attribution = parseAttribution(body.attribution);
+    // Token proposto pelo chamador (já impresso na mensagem) vale na 1ª
+    // tentativa; se colidir, gera outro — a mensagem já saiu, mas o clique
+    // e o toque ficam gravados de qualquer forma.
+    const proposed = proposedToken(body.click_token);
     let clickToken: string | null = null;
     try {
       for (let attempt = 0; attempt < 3 && !clickToken; attempt++) {
-        const row = buildClickRow(ctx.accountId, attribution);
+        const row =
+          attempt === 0 && proposed
+            ? buildClickRow(ctx.accountId, attribution, proposed)
+            : buildClickRow(ctx.accountId, attribution);
         const { data: click, error } = await ctx.supabase
           .from('ad_clicks')
           .insert(row)
