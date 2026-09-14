@@ -171,7 +171,15 @@ export async function setContactTags(
     tagNames,
     canCreateTags: true,
   });
-  const desired = new Set(tagIdByKey.values());
+  // `resolveImportTagIds` devolve o mapa de TODAS as etiquetas da conta (é o
+  // que o import CSV precisa). Usar `tagIdByKey.values()` direto aplicava
+  // todas elas ao contato — cada lead do portal saía com a etiqueta de todos
+  // os cursos já vistos. O conjunto desejado é só o dos nomes pedidos.
+  const desired = new Set(
+    tagNames
+      .map((name) => tagIdByKey.get(name.trim().toLowerCase()))
+      .filter((id): id is string => Boolean(id))
+  );
 
   // Diff against the current joins rather than delete-all-then-insert:
   // a diff only touches tags that actually change, so a mid-operation
