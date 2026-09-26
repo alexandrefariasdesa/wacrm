@@ -13,6 +13,7 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactSidebar } from "@/components/inbox/contact-sidebar";
+import { onContactTagsChanged } from "@/lib/inbox/tag-events";
 import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,17 @@ function InboxPageInner() {
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [activeContact, setActiveContact] = useState<Contact | null>(null);
+
+  // Etiquetas alteradas pela barra lateral: reflete na lista (e no filtro) sem recarregar.
+  useEffect(
+    () =>
+      onContactTagsChanged(({ contactId, tags }) =>
+        setConversations((prev) =>
+          prev.map((c) => (c.contact?.id === contactId ? { ...c, contact: { ...c.contact, tags } as Contact } : c)),
+        ),
+      ),
+    [],
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(
     null

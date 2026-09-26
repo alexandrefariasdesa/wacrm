@@ -15,6 +15,7 @@ import {
   DollarSign,
   StickyNote,
   Plus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +23,8 @@ import { format } from "date-fns";
 import { useTranslations } from "next-intl";
 import { QuickRepliesPanel } from "./quick-replies-panel";
 import { DealStageMenu } from "./deal-stage-menu";
+import { ContactTagPicker } from "./contact-tag-picker";
+import { emitContactTagsChanged } from "@/lib/inbox/tag-events";
 
 interface ContactSidebarProps {
   contact: Contact | null;
@@ -92,6 +95,22 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
     // React Compiler's inference agrees with the manual dep list —
     // fixes the `preserve-manual-memoization` lint error.
   }, [contact]);
+
+  const handleRemoveTag = useCallback(
+    async (tag: Tag & { contact_tag_id: string }) => {
+      if (!contact) return;
+      const before = tags;
+      const next = tags.filter((t) => t.contact_tag_id !== tag.contact_tag_id);
+      setTags(next);
+      const { error } = await createClient().from("contact_tags").delete().eq("id", tag.contact_tag_id);
+      if (error) {
+        setTags(before);
+        return;
+      }
+      emitContactTagsChanged(contact.id, next);
+    },
+    [contact, tags],
+  );
 
   const handleAddNote = useCallback(async () => {
     if (!contact || !newNote.trim()) return;
@@ -195,6 +214,9 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
             <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
               <TagIcon className="h-3 w-3" />
               {tSidebar("tags")}
+              <span className="ml-auto">
+                <ContactTagPicker contactId={contact.id} assigned={tags} onChange={setTags} />
+              </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {tags.length === 0 ? (
@@ -210,6 +232,15 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
                     }}
                   >
                     {tag.name}
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveTag(tag)}
+                      aria-label={tSidebar("removeTag")}
+                      title={tSidebar("removeTag")}
+                      className="ml-1 inline-flex align-middle opacity-60 hover:opacity-100"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
                   </span>
                 ))
               )}

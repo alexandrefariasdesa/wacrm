@@ -47,6 +47,8 @@ export interface ContactFilters {
   tagIds: string[];
   /** Exact company match, or null for no company filter. */
   company: string | null;
+  /** 'any' (padrão): basta uma etiqueta; 'all': o contato precisa ter todas as marcadas. */
+  tagMatch?: "any" | "all";
 }
 
 /**
@@ -56,11 +58,13 @@ export interface ContactFilters {
  */
 export function matchesContactFilters(
   conversation: Conversation,
-  { tagIds, company }: ContactFilters,
+  { tagIds, company, tagMatch = "any" }: ContactFilters,
 ): boolean {
   if (tagIds.length > 0) {
-    const contactTagIds = conversation.contact?.tags ?? [];
-    if (!contactTagIds.some((t) => tagIds.includes(t.id))) return false;
+    const have = new Set((conversation.contact?.tags ?? []).map((t) => t.id));
+    const ok =
+      tagMatch === "all" ? tagIds.every((id) => have.has(id)) : tagIds.some((id) => have.has(id));
+    if (!ok) return false;
   }
 
   if (company !== null && conversation.contact?.company?.trim() !== company) {

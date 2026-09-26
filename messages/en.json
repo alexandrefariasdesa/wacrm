@@ -150,7 +150,10 @@
       "clearAll": "Clear all",
       "noConversations": "No conversations found",
       "noMessagesYet": "No messages yet",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "tagMatchAny": "Any tag",
+      "tagMatchAll": "All tags",
+      "tagMatchAllShort": "All:"
     },
     "messageThread": {
       "backToConversations": "Back to conversations",
@@ -297,7 +300,13 @@
       "quickReplyError": "Couldn't send",
       "stageMoved": "Moved to {stage}",
       "stageMoveError": "Couldn't move the deal",
-      "changeStage": "Change stage"
+      "changeStage": "Change stage",
+      "addTag": "Add tag",
+      "searchTags": "Search tags…",
+      "createTag": "Create \"{name}\"",
+      "removeTag": "Remove tag",
+      "tagError": "Couldn't change the tag",
+      "noTagResults": "No tags found"
     },
     "aiBanner": {
       "pausedTitle": "AI assistant is paused here",

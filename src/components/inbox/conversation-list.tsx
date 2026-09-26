@@ -18,6 +18,9 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -71,6 +74,7 @@ export function ConversationList({
   // Broadcast audience filtering. Company is an exact match on the field.
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [tagMatch, setTagMatch] = useState<"any" | "all">("any");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
 
   // Keep the latest callback in a ref so the fetch effect below can
@@ -173,6 +177,7 @@ export function ConversationList({
         matchesContactFilters(c, {
           tagIds: selectedTagIds,
           company: selectedCompany,
+          tagMatch,
         })
       );
     }
@@ -188,7 +193,7 @@ export function ConversationList({
     }
 
     return result;
-  }, [conversations, filter, search, selectedTagIds, selectedCompany]);
+  }, [conversations, filter, search, selectedTagIds, selectedCompany, tagMatch]);
 
   const toggleTag = useCallback((id: string) => {
     setSelectedTagIds((prev) =>
@@ -199,6 +204,7 @@ export function ConversationList({
   const clearContactFilters = useCallback(() => {
     setSelectedTagIds([]);
     setSelectedCompany(null);
+    setTagMatch("any");
   }, []);
 
   const hasContactFilters = selectedTagIds.length > 0 || selectedCompany !== null;
@@ -285,6 +291,18 @@ export function ConversationList({
                 align="start"
                 className="max-h-64 w-56 border-border bg-popover"
               >
+                <DropdownMenuRadioGroup
+                  value={tagMatch}
+                  onValueChange={(v) => setTagMatch(v as "any" | "all")}
+                >
+                  <DropdownMenuRadioItem value="any" className="text-sm text-popover-foreground">
+                    {t("tagMatchAny")}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="all" className="text-sm text-popover-foreground">
+                    {t("tagMatchAll")}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
                 {tags.map((t) => (
                   <DropdownMenuCheckboxItem
                     key={t.id}
@@ -354,6 +372,9 @@ export function ConversationList({
 
         {hasContactFilters && (
           <div className="flex flex-wrap items-center gap-1">
+            {selectedTagIds.length > 1 && tagMatch === "all" && (
+              <span className="text-[11px] text-muted-foreground">{t("tagMatchAllShort")}</span>
+            )}
             {selectedTagIds.map((id) => {
               const tag = tagsById.get(id);
               return (

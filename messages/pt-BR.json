@@ -150,7 +150,10 @@
       "clearAll": "Limpar tudo",
       "noConversations": "Nenhuma conversa encontrada",
       "noMessagesYet": "Nenhuma mensagem ainda",
-      "unknown": "Desconhecido"
+      "unknown": "Desconhecido",
+      "tagMatchAny": "Qualquer etiqueta",
+      "tagMatchAll": "Todas as etiquetas",
+      "tagMatchAllShort": "Todas:"
     },
     "messageThread": {
       "backToConversations": "Voltar para as conversas",
@@ -297,7 +300,13 @@
       "quickReplyError": "Não foi possível enviar",
       "stageMoved": "Movido para {stage}",
       "stageMoveError": "Não foi possível mover o negócio",
-      "changeStage": "Trocar etapa"
+      "changeStage": "Trocar etapa",
+      "addTag": "Adicionar etiqueta",
+      "searchTags": "Buscar etiqueta…",
+      "createTag": "Criar «{name}»",
+      "removeTag": "Remover etiqueta",
+      "tagError": "Não foi possível alterar a etiqueta",
+      "noTagResults": "Nenhuma etiqueta encontrada"
     },
     "aiBanner": {
       "pausedTitle": "O assistente de IA está pausado aqui",

@@ -143,3 +143,28 @@ describe("normalizeConversation", () => {
     expect(normalizeConversation(raw).contact).toBeNull();
   });
 });
+
+describe("matchesContactFilters — tagMatch", () => {
+  const conv = makeConversation({ tags: [tag("a"), tag("b")] });
+
+  it("padrão e 'any': basta uma das etiquetas", () => {
+    expect(matchesContactFilters(conv, { tagIds: ["a", "z"], company: null })).toBe(true);
+    expect(matchesContactFilters(conv, { tagIds: ["a", "z"], company: null, tagMatch: "any" })).toBe(true);
+    expect(matchesContactFilters(conv, { tagIds: ["z"], company: null, tagMatch: "any" })).toBe(false);
+  });
+  it("'all': exige todas as etiquetas marcadas", () => {
+    expect(matchesContactFilters(conv, { tagIds: ["a", "b"], company: null, tagMatch: "all" })).toBe(true);
+    expect(matchesContactFilters(conv, { tagIds: ["a", "z"], company: null, tagMatch: "all" })).toBe(false);
+    expect(matchesContactFilters(conv, { tagIds: ["a"], company: null, tagMatch: "all" })).toBe(true);
+  });
+  it("'all' sem etiquetas marcadas não filtra, e contato sem etiquetas não passa", () => {
+    expect(matchesContactFilters(conv, { tagIds: [], company: null, tagMatch: "all" })).toBe(true);
+    const bare = makeConversation({ tags: [] });
+    expect(matchesContactFilters(bare, { tagIds: ["a"], company: null, tagMatch: "all" })).toBe(false);
+  });
+  it("combina com o filtro de empresa", () => {
+    const withCo = makeConversation({ tags: [tag("a"), tag("b")], company: "Acme" });
+    expect(matchesContactFilters(withCo, { tagIds: ["a", "b"], company: "Acme", tagMatch: "all" })).toBe(true);
+    expect(matchesContactFilters(withCo, { tagIds: ["a", "b"], company: "Outra", tagMatch: "all" })).toBe(false);
+  });
+});
