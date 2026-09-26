@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, MessageSquare, Pencil, Plus, Trash2, Zap } from "lucide-react";
+import { ListOrdered, Loader2, MessageSquare, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SettingsPanelHead } from "./settings-panel-head";
+import { SequenceEditor } from "./sequence-editor";
+import { describeSteps, validateSteps, type SequenceStep } from "@/lib/quick-replies/steps";
 import {
   InteractiveBuilder,
   blankButtonsPayload,
@@ -32,6 +34,7 @@ interface DraftState {
   kind: QuickReplyKind;
   content_text: string;
   interactive_payload: InteractiveMessagePayload;
+  steps: SequenceStep[];
 }
 
 function emptyDraft(): DraftState {
@@ -40,6 +43,7 @@ function emptyDraft(): DraftState {
     kind: "text",
     content_text: "",
     interactive_payload: blankButtonsPayload(),
+    steps: [{ type: "text", text: "", delay_seconds: 0 }],
   };
 }
 
@@ -74,6 +78,7 @@ export function QuickRepliesManager() {
       content_text: qr.content_text ?? "",
       interactive_payload:
         qr.interactive_payload ?? blankButtonsPayload(),
+      steps: qr.steps ?? emptyDraft().steps,
     });
 
   const save = useCallback(async () => {
@@ -82,10 +87,19 @@ export function QuickRepliesManager() {
       toast.error(t("nameRequired"));
       return;
     }
+    if (draft.kind === "sequence") {
+      const checked = validateSteps(draft.steps);
+      if (!checked.ok) {
+        toast.error(checked.error);
+        return;
+      }
+    }
     const payload =
       draft.kind === "interactive"
         ? { title: draft.title, kind: "interactive", interactive_payload: draft.interactive_payload }
-        : { title: draft.title, kind: "text", content_text: draft.content_text };
+        : draft.kind === "sequence"
+          ? { title: draft.title, kind: "sequence", steps: draft.steps }
+          : { title: draft.title, kind: "text", content_text: draft.content_text };
 
     setSaving(true);
     try {
@@ -155,6 +169,8 @@ export function QuickRepliesManager() {
             >
               {qr.kind === "interactive" ? (
                 <Zap className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              ) : qr.kind === "sequence" ? (
+                <ListOrdered className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               ) : (
                 <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               )}
@@ -163,7 +179,14 @@ export function QuickRepliesManager() {
                 <p className="truncate text-xs text-muted-foreground">
                   {qr.kind === "interactive" && qr.interactive_payload
                     ? interactivePayloadPreviewText(qr.interactive_payload)
-                    : qr.content_text}
+                    : qr.kind === "sequence"
+                      ? describeSteps(qr.steps ?? [], {
+                          text: t("stepText"),
+                          image: t("stepImage"),
+                          video: t("stepVideo"),
+                          document: t("stepDocument"),
+                        })
+                      : qr.content_text}
                 </p>
               </div>
               <div className="flex shrink-0 gap-1">
@@ -211,8 +234,18 @@ export function QuickRepliesManager() {
                   label={t("kindInteractive")}
                   onClick={() => setDraft({ ...draft, kind: "interactive" })}
                 />
+                <KindTab
+                  active={draft.kind === "sequence"}
+                  label={t("kindSequence")}
+                  onClick={() => setDraft({ ...draft, kind: "sequence" })}
+                />
               </div>
-              {draft.kind === "text" ? (
+              {draft.kind === "sequence" ? (
+                <SequenceEditor
+                  value={draft.steps}
+                  onChange={(steps) => setDraft({ ...draft, steps })}
+                />
+              ) : draft.kind === "text" ? (
                 <Textarea
                   value={draft.content_text}
                   onChange={(e) => setDraft({ ...draft, content_text: e.target.value })}
