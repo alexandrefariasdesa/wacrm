@@ -12,6 +12,7 @@ import type { Conversation, ConversationStatus, Tag } from "@/types";
 import { Search, ChevronDown, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslations } from "next-intl";
+import { onContactTagsChanged } from "@/lib/inbox/tag-events";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -135,12 +136,16 @@ export function ConversationList({
   useEffect(() => {
     const supabase = createClient();
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const { data } = await supabase.from("tags").select("*").order("name");
       if (!cancelled && data) setTags(data as Tag[]);
-    })();
+    };
+    void load();
+    // Uma etiqueta criada pela barra lateral precisa aparecer no filtro sem recarregar.
+    const off = onContactTagsChanged(() => void load());
     return () => {
       cancelled = true;
+      off();
     };
   }, []);
 
