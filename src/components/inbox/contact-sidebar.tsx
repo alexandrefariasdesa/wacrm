@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { useTranslations } from "next-intl";
 import { QuickRepliesPanel } from "./quick-replies-panel";
+import { DealStageMenu } from "./deal-stage-menu";
 
 interface ContactSidebarProps {
   contact: Contact | null;
@@ -241,17 +242,14 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
                         {deal.currency ?? "$"}
                         {deal.value.toLocaleString()}
                       </span>
-                      {deal.stage && (
-                        <span
-                          className="rounded-full px-1.5 py-0.5 text-[10px]"
-                          style={{
-                            backgroundColor: `${deal.stage.color}20`,
-                            color: deal.stage.color,
-                          }}
-                        >
-                          {deal.stage.name}
-                        </span>
-                      )}
+                      <DealStageMenu
+                        deal={deal}
+                        onMoved={(stageId, stage) =>
+                          setDeals((prev) =>
+                            prev.map((d) => (d.id === deal.id ? { ...d, stage_id: stageId, stage } : d)),
+                          )
+                        }
+                      />
                     </div>
                   </div>
                 ))

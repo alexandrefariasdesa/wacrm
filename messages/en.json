@@ -294,7 +294,10 @@
       "quickRepliesSearch": "Search…",
       "quickReplySent": "Message sent",
       "quickReplySequenceSent": "Sending sequence ({count} steps)",
-      "quickReplyError": "Couldn't send"
+      "quickReplyError": "Couldn't send",
+      "stageMoved": "Moved to {stage}",
+      "stageMoveError": "Couldn't move the deal",
+      "changeStage": "Change stage"
     },
     "aiBanner": {
       "pausedTitle": "AI assistant is paused here",

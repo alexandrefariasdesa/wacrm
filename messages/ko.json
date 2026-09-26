@@ -294,7 +294,10 @@
       "quickRepliesSearch": "검색…",
       "quickReplySent": "메시지를 보냈습니다",
       "quickReplySequenceSent": "시퀀스 전송 중({count}단계)",
-      "quickReplyError": "보내지 못했습니다"
+      "quickReplyError": "보내지 못했습니다",
+      "stageMoved": "{stage}(으)로 이동했습니다",
+      "stageMoveError": "거래를 이동하지 못했습니다",
+      "changeStage": "단계 변경"
     },
     "aiBanner": {
       "pausedTitle": "이 대화에서 AI 어시스턴트가 일시 중지됨",

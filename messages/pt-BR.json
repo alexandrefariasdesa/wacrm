@@ -294,7 +294,10 @@
       "quickRepliesSearch": "Buscar…",
       "quickReplySent": "Mensagem enviada",
       "quickReplySequenceSent": "Sequência enviando ({count} passos)",
-      "quickReplyError": "Não foi possível enviar"
+      "quickReplyError": "Não foi possível enviar",
+      "stageMoved": "Movido para {stage}",
+      "stageMoveError": "Não foi possível mover o negócio",
+      "changeStage": "Trocar etapa"
     },
     "aiBanner": {
       "pausedTitle": "O assistente de IA está pausado aqui",
