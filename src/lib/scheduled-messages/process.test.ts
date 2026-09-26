@@ -12,19 +12,35 @@ function row(over: Record<string, unknown> = {}) {
   }
 }
 
-function makeDb(rows: unknown[]) {
+function makeDb(rows: unknown[], ownsRow = true) {
   const updates: Array<{ id: string; patch: Record<string, unknown> }> = []
+  const touches: string[] = []
   const db = {
     rpc: vi.fn(async () => ({ data: rows, error: null })),
     from: vi.fn(() => ({
-      update: (patch: Record<string, unknown>) => ({
-        eq: (_col: string, id: string) => ({
-          eq: async () => { updates.push({ id, patch }); return { error: null } },
-        }),
-      }),
+      update: (patch: Record<string, unknown>) => {
+        const isTouch = Object.keys(patch).length === 1 && 'claimed_at' in patch
+        let id = ''
+        const q: Record<string, unknown> = {
+          eq: (col: string, v: string) => {
+            if (col === 'id') id = v
+            return q
+          },
+          // "toque de posse": só devolve linha se a mensagem ainda é deste worker
+          select: async () => {
+            touches.push(id)
+            return { data: ownsRow ? [{ id }] : [], error: null }
+          },
+          then: (res: (v: unknown) => unknown) => {
+            if (!isTouch) updates.push({ id, patch })
+            return Promise.resolve({ error: null }).then(res)
+          },
+        }
+        return q
+      },
     })),
   }
-  return { db: db as never, updates }
+  return { db: db as never, updates, touches }
 }
 
 describe('processDueMessages', () => {
@@ -96,8 +112,34 @@ describe('processDueMessages', () => {
 
   it('sem vencidas devolve zeros; erro do claim propaga', async () => {
     const { db } = makeDb([])
-    expect(await processDueMessages(db, vi.fn(), clock)).toEqual({ claimed: 0, sent: 0, failed: 0, missed: 0, retried: 0 })
+    expect(await processDueMessages(db, vi.fn(), clock)).toEqual({ claimed: 0, sent: 0, failed: 0, missed: 0, retried: 0, lost: 0 })
     const bad = { rpc: async () => ({ data: null, error: { message: 'db fora' } }) } as never
     await expect(processDueMessages(bad, vi.fn(), clock)).rejects.toThrow('db fora')
+  })
+
+  it('linha recuperada por outro worker (perdeu a posse) NÃO é enviada', async () => {
+    const { db, updates } = makeDb([row()], false)
+    const send = vi.fn()
+    const r = await processDueMessages(db, send, clock)
+    expect(send).not.toHaveBeenCalled()
+    expect(r).toMatchObject({ claimed: 1, lost: 1, sent: 0 })
+    expect(updates).toHaveLength(0)
+  })
+
+  it('confirma a posse imediatamente antes de cada envio', async () => {
+    const { db, touches } = makeDb([row({ id: 'a' }), row({ id: 'b' })])
+    await processDueMessages(db, vi.fn(async () => ({ messageId: 'x' })), clock)
+    expect(touches).toEqual(['a', 'b'])
+  })
+
+  it('db_error depois do envio (mensagem já entregue) vira sent e NÃO retenta', async () => {
+    const { db, updates } = makeDb([row({ attempts: 1 })])
+    const send = vi.fn(async () => {
+      throw new SendMessageError('db_error', 'Message sent to Meta but failed to save to DB: x', 500)
+    })
+    const r = await processDueMessages(db, send, clock)
+    expect(r).toMatchObject({ sent: 1, retried: 0, failed: 0 })
+    expect(updates[0].patch).toMatchObject({ status: 'sent', sent_at: NOW.toISOString() })
+    expect(String(updates[0].patch.last_error)).toContain('não foi gravada')
   })
 })

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { SendMessageError } from '@/lib/whatsapp/send-message'
 import { CLAIM_BATCH, LATE_TOLERANCE_MS, MAX_ATTEMPTS, RETRY_DELAY_MS } from './constants'
 
 interface DueRow {
@@ -8,6 +9,7 @@ interface DueRow {
   body: string
   scheduled_for: string
   attempts: number
+  claimed_at: string
 }
 
 export type Sender = (
@@ -21,6 +23,8 @@ export interface ProcessResult {
   failed: number
   missed: number
   retried: number
+  /** perdeu a posse (outro worker recuperou a linha): não envia, o dono atual cuida */
+  lost: number
 }
 
 export async function processDueMessages(
@@ -32,7 +36,7 @@ export async function processDueMessages(
   if (error) throw new Error(error.message)
 
   const rows = (data ?? []) as DueRow[]
-  const result: ProcessResult = { claimed: rows.length, sent: 0, failed: 0, missed: 0, retried: 0 }
+  const result: ProcessResult = { claimed: rows.length, sent: 0, failed: 0, missed: 0, retried: 0, lost: 0 }
 
   // Em série: o Evolution não gosta de rajada, e a ordem do agendamento é mantida.
   for (const row of rows) {
@@ -53,6 +57,20 @@ export async function processDueMessages(
       continue
     }
 
+    // Posse: o lote pode demorar mais que os 5 min da recuperação; se outro worker já reclamou
+    // esta linha, `claimed_at` mudou e este UPDATE não acha nada — então NÃO enviamos (evita duplicar).
+    const { data: owned } = await db
+      .from('scheduled_messages')
+      .update({ claimed_at: now.toISOString() })
+      .eq('id', row.id)
+      .eq('status', 'sending')
+      .eq('claimed_at', row.claimed_at)
+      .select('id')
+    if (!owned?.length) {
+      result.lost += 1
+      continue
+    }
+
     try {
       const sent = await send(row.account_id, {
         conversationId: row.conversation_id,
@@ -67,6 +85,16 @@ export async function processDueMessages(
       })
       result.sent += 1
     } catch (err) {
+      // db_error = o WhatsApp JÁ entregou e só a gravação local falhou: retentar duplicaria a mensagem.
+      if (err instanceof SendMessageError && err.code === 'db_error') {
+        await setStatus({
+          status: 'sent',
+          sent_at: now.toISOString(),
+          last_error: 'Enviada, mas não foi gravada na conversa: ' + err.message,
+        })
+        result.sent += 1
+        continue
+      }
       const reason = err instanceof Error ? err.message : String(err)
       if (row.attempts < MAX_ATTEMPTS) {
         await setStatus({
