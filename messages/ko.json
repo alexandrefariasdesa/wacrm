@@ -288,7 +288,13 @@
       "deals": "딜",
       "noTags": "태그 없음",
       "noDeals": "딜 없음",
-      "addNotePlaceholder": "메모 추가..."
+      "addNotePlaceholder": "메모 추가...",
+      "quickReplies": "빠른 메시지",
+      "quickRepliesEmpty": "빠른 메시지가 없습니다. 설정에서 만드세요.",
+      "quickRepliesSearch": "검색…",
+      "quickReplySent": "메시지를 보냈습니다",
+      "quickReplySequenceSent": "시퀀스 전송 중({count}단계)",
+      "quickReplyError": "보내지 못했습니다"
     },
     "aiBanner": {
       "pausedTitle": "이 대화에서 AI 어시스턴트가 일시 중지됨",

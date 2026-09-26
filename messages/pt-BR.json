@@ -288,7 +288,13 @@
       "deals": "Negócios",
       "noTags": "Sem etiquetas",
       "noDeals": "Sem negócios",
-      "addNotePlaceholder": "Escreva uma anotação..."
+      "addNotePlaceholder": "Escreva uma anotação...",
+      "quickReplies": "Mensagens rápidas",
+      "quickRepliesEmpty": "Nenhuma mensagem rápida. Crie em Configurações.",
+      "quickRepliesSearch": "Buscar…",
+      "quickReplySent": "Mensagem enviada",
+      "quickReplySequenceSent": "Sequência enviando ({count} passos)",
+      "quickReplyError": "Não foi possível enviar"
     },
     "aiBanner": {
       "pausedTitle": "O assistente de IA está pausado aqui",

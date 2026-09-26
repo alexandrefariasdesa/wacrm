@@ -288,7 +288,13 @@
       "deals": "Deals",
       "noTags": "No tags",
       "noDeals": "No deals",
-      "addNotePlaceholder": "Add a note..."
+      "addNotePlaceholder": "Add a note...",
+      "quickReplies": "Quick messages",
+      "quickRepliesEmpty": "No quick messages. Create them in Settings.",
+      "quickRepliesSearch": "Search…",
+      "quickReplySent": "Message sent",
+      "quickReplySequenceSent": "Sending sequence ({count} steps)",
+      "quickReplyError": "Couldn't send"
     },
     "aiBanner": {
       "pausedTitle": "AI assistant is paused here",
