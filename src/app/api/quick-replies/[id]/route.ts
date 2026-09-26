@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { validateInteractivePayload } from '@/lib/whatsapp/interactive'
+import { validateSteps } from '@/lib/quick-replies/steps'
 
 // Update / delete a single quick reply. Quick replies are account-
 // shared, so every mutation is scoped by `account_id` (the service-role
@@ -34,15 +35,22 @@ export async function PATCH(
   // drives which content column is authoritative and the other is cleared —
   // otherwise a switched row keeps a stale payload the picker mis-routes on.
   if ('kind' in body) {
-    if (body.kind !== 'text' && body.kind !== 'interactive') {
-      return NextResponse.json({ error: 'kind must be "text" or "interactive"' }, { status: 400 })
+    if (body.kind !== 'text' && body.kind !== 'interactive' && body.kind !== 'sequence') {
+      return NextResponse.json({ error: 'kind must be "text", "interactive" or "sequence"' }, { status: 400 })
     }
     update.kind = body.kind
-    if (body.kind === 'interactive') {
+    if (body.kind === 'sequence') {
+      const result = validateSteps(body.steps)
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+      update.steps = result.steps
+      update.content_text = null
+      update.interactive_payload = null
+    } else if (body.kind === 'interactive') {
       const result = validateInteractivePayload(body.interactive_payload)
       if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
       update.interactive_payload = body.interactive_payload
       update.content_text = null
+      update.steps = null
     } else {
       const text = typeof body.content_text === 'string' ? body.content_text : ''
       if (!text.trim()) {
@@ -53,6 +61,7 @@ export async function PATCH(
       }
       update.content_text = text
       update.interactive_payload = null
+      update.steps = null
     }
   } else {
     // No kind change — allow partial edits of whichever field the row uses.

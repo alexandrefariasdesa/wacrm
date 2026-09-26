@@ -683,7 +683,7 @@ export interface AutomationLog {
 // Quick replies — reusable snippets (migration 035)
 // ============================================================
 
-export type QuickReplyKind = 'text' | 'interactive';
+export type QuickReplyKind = 'text' | 'interactive' | 'sequence';
 
 export interface QuickReply {
   id: string;
@@ -697,6 +697,8 @@ export interface QuickReply {
   content_text?: string | null;
   /** Set when `kind === 'interactive'`. */
   interactive_payload?: InteractiveMessagePayload | null;
+  /** Set when `kind === 'sequence'`. */
+  steps?: import('@/lib/quick-replies/steps').SequenceStep[] | null;
   created_at: string;
   updated_at: string;
 }

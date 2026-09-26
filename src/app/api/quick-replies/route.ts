@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentAccount, requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { validateInteractivePayload } from '@/lib/whatsapp/interactive'
+import { validateSteps } from '@/lib/quick-replies/steps'
 
 // Quick replies — reusable snippets (plain text or a saved interactive
 // message) shared across the account. GET lists; POST creates. Mirrors
@@ -35,15 +36,21 @@ export async function POST(request: Request) {
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
 
   const title = typeof body.title === 'string' ? body.title.trim() : ''
-  const kind = body.kind === 'interactive' ? 'interactive' : 'text'
+  const kind: 'text' | 'interactive' | 'sequence' =
+    body.kind === 'interactive' ? 'interactive' : body.kind === 'sequence' ? 'sequence' : 'text'
   if (!title) {
     return NextResponse.json({ error: 'title is required' }, { status: 400 })
   }
 
   let content_text: string | null = null
   let interactive_payload: unknown = null
+  let steps: unknown = null
 
-  if (kind === 'interactive') {
+  if (kind === 'sequence') {
+    const result = validateSteps(body.steps)
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 })
+    steps = result.steps
+  } else if (kind === 'interactive') {
     const result = validateInteractivePayload(body.interactive_payload)
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 400 })
@@ -69,6 +76,7 @@ export async function POST(request: Request) {
       kind,
       content_text,
       interactive_payload,
+      steps,
     })
     .select()
     .single()
