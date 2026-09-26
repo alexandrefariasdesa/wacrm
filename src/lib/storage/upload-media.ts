@@ -33,6 +33,24 @@ export const MEDIA_MAX_BYTES_BY_KIND = {
   document: 16 * 1024 * 1024,
 } as const;
 
+export type ChannelKind = "cloud_api" | "unofficial";
+
+/**
+ * Teto de upload por tipo e por canal. O Evolution (`unofficial`) não tem os limites da API
+ * oficial da Meta; nele o teto é o do bucket (50 MB) para vídeo/documento e 16 MB para
+ * imagem/áudio. Sem canal conhecido, vale o mais restritivo (Meta).
+ */
+export function mediaMaxBytes(
+  kind: keyof typeof MEDIA_MAX_BYTES_BY_KIND,
+  channel: ChannelKind | null | undefined,
+): number {
+  if (channel === "unofficial") {
+    const MB = 1024 * 1024;
+    return kind === "video" || kind === "document" ? 50 * MB : 16 * MB;
+  }
+  return MEDIA_MAX_BYTES_BY_KIND[kind];
+}
+
 /**
  * Build the account-scoped object path for an upload. Pure + exported so
  * it can be unit-tested without a Supabase client.

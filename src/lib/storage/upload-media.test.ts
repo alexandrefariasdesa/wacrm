@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMediaPath, MEDIA_MAX_BYTES_BY_KIND } from "./upload-media";
+import { buildMediaPath, mediaMaxBytes, MEDIA_MAX_BYTES_BY_KIND } from "./upload-media";
 
 const ACCOUNT = "11111111-2222-3333-4444-555555555555";
 
@@ -53,5 +53,22 @@ describe("MEDIA_MAX_BYTES_BY_KIND", () => {
     expect(MEDIA_MAX_BYTES_BY_KIND.video).toBe(16 * 1024 * 1024);
     expect(MEDIA_MAX_BYTES_BY_KIND.audio).toBe(16 * 1024 * 1024);
     expect(MEDIA_MAX_BYTES_BY_KIND.document).toBe(16 * 1024 * 1024);
+  });
+});
+
+describe("mediaMaxBytes", () => {
+  const MB = 1024 * 1024;
+  it("Evolution (unofficial): imagem 16, vídeo 50, áudio 16, documento 50", () => {
+    expect(mediaMaxBytes("image", "unofficial")).toBe(16 * MB);
+    expect(mediaMaxBytes("video", "unofficial")).toBe(50 * MB);
+    expect(mediaMaxBytes("audio", "unofficial")).toBe(16 * MB);
+    expect(mediaMaxBytes("document", "unofficial")).toBe(50 * MB);
+  });
+  it("API oficial e canal desconhecido mantêm os tetos da Meta", () => {
+    for (const ch of ["cloud_api", null, undefined] as const) {
+      expect(mediaMaxBytes("image", ch)).toBe(5 * MB);
+      expect(mediaMaxBytes("video", ch)).toBe(16 * MB);
+      expect(mediaMaxBytes("document", ch)).toBe(16 * MB);
+    }
   });
 });

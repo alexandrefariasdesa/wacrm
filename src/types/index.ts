@@ -163,6 +163,8 @@ export interface Conversation {
   contact_id: string;
   status: ConversationStatus;
   assigned_agent_id?: string;
+  /** Canal (whatsapp_config.id) por onde a conversa entrou. */
+  channel_id?: string | null;
   last_message_text?: string;
   last_message_at?: string;
   unread_count: number;

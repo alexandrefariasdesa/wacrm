@@ -45,7 +45,8 @@ import { toast } from "sonner";
 import {
   uploadAccountMedia,
   deleteAccountMedia,
-  MEDIA_MAX_BYTES_BY_KIND,
+  mediaMaxBytes,
+  type ChannelKind,
 } from "@/lib/storage/upload-media";
 import { ReplyQuote } from "./reply-quote";
 import { useTranslations } from "next-intl";
@@ -114,6 +115,8 @@ interface MediaDraft {
 interface MessageComposerProps {
   conversationId: string;
   sessionExpired: boolean;
+  /** Tipo do canal da conversa; define o teto de upload (Evolution: até 50 MB). */
+  channelKind?: ChannelKind | null;
   onSend: (text: string, replyToId?: string) => void;
   onSendMedia: (payload: SendMediaPayload) => void;
   onSendInteractive: (payload: InteractiveMessagePayload, replyToId?: string) => void;
@@ -136,6 +139,7 @@ const OPUS_ENCODER_PATH = "/opus/encoderWorker.min.js";
 export function MessageComposer({
   conversationId,
   sessionExpired,
+  channelKind,
   onSend,
   onSendMedia,
   onSendInteractive,
@@ -411,7 +415,7 @@ export function MessageComposer({
       // Per-kind ceiling mirrors Meta's caps (image 5 MB, etc.) so we
       // reject before upload rather than orphaning an object that Meta
       // would then refuse at send.
-      const max = MEDIA_MAX_BYTES_BY_KIND[kind];
+      const max = mediaMaxBytes(kind, channelKind);
       if (file.size > max) {
         toast.error(
           `File is ${(file.size / 1024 / 1024).toFixed(1)} MB — ${kind} limit is ${Math.round(
@@ -432,7 +436,7 @@ export function MessageComposer({
         setBusy(false);
       }
     },
-    [removeStaged],
+    [removeStaged, channelKind],
   );
 
   const handlePicked = useCallback(
@@ -454,8 +458,9 @@ export function MessageComposer({
         type: "audio/ogg",
       });
       if (file.size === 0) return; // cancelled / empty take
-      if (file.size > MEDIA_MAX_BYTES_BY_KIND.audio) {
-        toast.error("Recording is too long (over 16 MB).");
+      const audioMax = mediaMaxBytes("audio", channelKind);
+      if (file.size > audioMax) {
+        toast.error(`Recording is too long (over ${Math.round(audioMax / 1024 / 1024)} MB).`);
         return;
       }
       setBusy(true);
@@ -469,7 +474,7 @@ export function MessageComposer({
         setBusy(false);
       }
     },
-    [removeStaged],
+    [removeStaged, channelKind],
   );
 
   const startRecording = useCallback(async () => {
