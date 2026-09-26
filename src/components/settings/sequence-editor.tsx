@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -40,6 +40,14 @@ export function SequenceEditor({ value, onChange }: Props) {
   const { hasUnofficial } = useChannelKinds();
   const [uploading, setUploading] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // O upload demora: ao terminar, o que vale é o rascunho DE AGORA (o atendente pode ter editado
+  // outro passo ou o título enquanto subia), não o de quando o envio começou.
+  const valueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    valueRef.current = value;
+    onChangeRef.current = onChange;
+  });
   const pendingIndex = useRef<number>(-1);
   // Caminho do arquivo que ESTE editor subiu, por passo — só esses podem ser apagados ao trocar.
   const uploadedPaths = useRef<Map<number, string>>(new Map());
@@ -122,10 +130,14 @@ export function SequenceEditor({ value, onChange }: Props) {
       const old = uploadedPaths.current.get(i);
       if (old) void deleteAccountMedia(CHAT_MEDIA_BUCKET, old).catch(() => {});
       uploadedPaths.current.set(i, path);
-      update(i, {
-        media_url: publicUrl,
-        filename: step.type === "document" ? file.name : step.filename,
-      });
+      const latest = valueRef.current;
+      onChangeRef.current(
+        latest.map((s, idx) =>
+          idx === i
+            ? { ...s, media_url: publicUrl, filename: s.type === "document" ? file.name : s.filename }
+            : s,
+        ),
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {

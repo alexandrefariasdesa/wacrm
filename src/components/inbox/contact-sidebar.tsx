@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,11 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
   const [notes, setNotes] = useState<ContactNote[]>([]);
   const [tags, setTags] = useState<(Tag & { contact_tag_id: string })[]>([]);
   const [newNote, setNewNote] = useState("");
+  // Contato exibido AGORA: respostas atrasadas de outro contato não podem mexer neste estado.
+  const contactIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    contactIdRef.current = contact?.id ?? null;
+  }, [contact]);
   const [addingNote, setAddingNote] = useState(false);
 
   const fetchContactData = useCallback(async () => {
@@ -104,7 +109,7 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
       setTags(next);
       const { error } = await createClient().from("contact_tags").delete().eq("id", tag.contact_tag_id);
       if (error) {
-        setTags(before);
+        if (contactIdRef.current === contact.id) setTags(before);
         return;
       }
       emitContactTagsChanged(contact.id, next);
@@ -215,7 +220,14 @@ export function ContactSidebar({ contact, conversationId }: ContactSidebarProps)
               <TagIcon className="h-3 w-3" />
               {tSidebar("tags")}
               <span className="ml-auto">
-                <ContactTagPicker contactId={contact.id} assigned={tags} onChange={setTags} />
+                <ContactTagPicker
+                  key={contact.id}
+                  contactId={contact.id}
+                  assigned={tags}
+                  onChange={(next) => {
+                    if (contactIdRef.current === contact.id) setTags(next);
+                  }}
+                />
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">

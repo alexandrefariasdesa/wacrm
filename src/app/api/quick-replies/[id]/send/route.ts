@@ -7,6 +7,8 @@ import {
   sendMessageToConversation,
 } from '@/lib/whatsapp/send-message'
 import { defaultSleep, sendSteps } from '@/lib/quick-replies/run-steps'
+import { findOversizedMedia } from '@/lib/quick-replies/channel-fit'
+import type { ChannelKind } from '@/lib/storage/upload-media'
 import { stepToSendParams, validateSteps, type SequenceStep } from '@/lib/quick-replies/steps'
 
 // Um clique na lateral da caixa de entrada. O 1º passo sai DENTRO da requisição (o erro volta
@@ -41,7 +43,7 @@ export async function POST(
 
     const { data: conv } = await supabase
       .from('conversations')
-      .select('id')
+      .select('id, channel_id')
       .eq('id', conversationId)
       .eq('account_id', accountId)
       .maybeSingle()
@@ -64,6 +66,29 @@ export async function POST(
     }
 
     const admin = supabaseAdmin()
+
+    // Tetos menores (Meta: imagem 5 MB, demais 16 MB) só valem na API oficial: recusa ANTES do 1º passo
+    // uma sequência com arquivo grande demais, em vez de falhar no meio dela.
+    let channelKind: ChannelKind | null = null
+    if (conv.channel_id) {
+      const { data: ch } = await admin
+        .from('whatsapp_config')
+        .select('kind')
+        .eq('id', conv.channel_id)
+        .maybeSingle()
+      channelKind = (ch?.kind as ChannelKind | undefined) ?? null
+    }
+    const big = await findOversizedMedia(steps, channelKind)
+    if (big) {
+      const mb = (n: number) => Math.round((n / 1024 / 1024) * 10) / 10
+      return NextResponse.json(
+        {
+          error: `O passo ${big.index + 1} tem ${mb(big.bytes)} MB e a API oficial do WhatsApp aceita até ${mb(big.max)} MB`,
+        },
+        { status: 422 },
+      )
+    }
+
     const send = (step: SequenceStep) =>
       sendMessageToConversation(admin, accountId, { conversationId, ...stepToSendParams(step) })
 

@@ -5,6 +5,7 @@ let conversation: Record<string, unknown> | null
 const sends: Array<Record<string, unknown>> = []
 const afterFns: Array<() => Promise<void> | void> = []
 let failOn: number | null = null
+let channelKind: string | null = 'unofficial'
 
 vi.mock('next/server', async (orig) => ({
   ...(await orig<typeof import('next/server')>()),
@@ -16,7 +17,13 @@ vi.mock('@/lib/auth/account', () => ({
   toErrorResponse: (e: unknown) => new Response(String(e), { status: 500 }),
 }))
 
-vi.mock('@/lib/flows/admin-client', () => ({ supabaseAdmin: () => ({ admin: true }) }))
+vi.mock('@/lib/flows/admin-client', () => ({
+  supabaseAdmin: () => ({
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: channelKind ? { kind: channelKind } : null, error: null }) }) }),
+    }),
+  }),
+}))
 
 vi.mock('@/lib/whatsapp/send-message', async (orig) => {
   const real = await orig<typeof import('@/lib/whatsapp/send-message')>()
@@ -58,7 +65,9 @@ beforeEach(() => {
   afterFns.length = 0
   failOn = null
   quickReply = { id: 'qr-1', kind: 'text', content_text: 'Olá!', steps: null }
-  conversation = { id: 'c1' }
+  conversation = { id: 'c1', channel_id: 'ch1' }
+  channelKind = 'unofficial'
+  vi.unstubAllGlobals()
 })
 
 describe('POST /api/quick-replies/[id]/send', () => {
@@ -129,5 +138,25 @@ describe('POST /api/quick-replies/[id]/send', () => {
     expect((await call({})).status).toBe(400)
     const res = await POST(new Request('http://x', { method: 'POST', body: '{ruim' }), { params: Promise.resolve({ id: 'qr-1' }) })
     expect(res.status).toBe(400)
+  })
+
+  it('API oficial: vídeo de 30 MB é recusado (422) ANTES de enviar o 1º passo', async () => {
+    channelKind = 'cloud_api'
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200, headers: { 'content-length': String(30 * 1024 * 1024) } })))
+    quickReply = {
+      id: 'qr-1', kind: 'sequence',
+      steps: [{ type: 'text', text: 'a', delay_seconds: 0 }, { type: 'video', media_url: VIDEO, delay_seconds: 0 }],
+    }
+    const res = await call({ conversation_id: 'c1' })
+    expect(res.status).toBe(422)
+    expect(String((await res.json()).error)).toContain('passo 2')
+    expect(sends).toHaveLength(0)
+  })
+
+  it('Evolution: o mesmo vídeo de 30 MB passa', async () => {
+    channelKind = 'unofficial'
+    quickReply = { id: 'qr-1', kind: 'sequence', steps: [{ type: 'video', media_url: VIDEO, delay_seconds: 0 }] }
+    expect((await call({ conversation_id: 'c1' })).status).toBe(202)
+    expect(sends).toHaveLength(1)
   })
 })
