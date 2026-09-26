@@ -199,6 +199,7 @@
       "document": "Document",
       "voiceNote": "Voice note",
       "sendTemplate": "Send template",
+      "scheduleMessage": "Schedule message",
       "draftWithAI": "Draft a reply with AI",
       "addCaption": "Add a caption…",
       "removeAttachment": "Remove attachment",
@@ -298,6 +299,26 @@
       "resumed": "AI resumed.",
       "updateError": "Couldn’t update the AI assistant.",
       "networkError": "Couldn’t reach the server."
+    },
+    "schedule": {
+      "title": "Schedule message",
+      "timezone": "Time in your timezone: {tz}",
+      "pastWarning": "Pick a time at least 30 seconds ahead.",
+      "bodyPlaceholder": "Text to send at the scheduled time",
+      "empty": "No scheduled messages in this conversation.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "schedule": "Schedule",
+      "scheduled": "Message scheduled",
+      "error": "Couldn't complete that",
+      "status": {
+        "pending": "Scheduled",
+        "sending": "Sending",
+        "sent": "Sent",
+        "failed": "Failed",
+        "missed": "Missed the time",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "Contacts": {

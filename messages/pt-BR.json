@@ -199,6 +199,7 @@
       "document": "Documento",
       "voiceNote": "Áudio",
       "sendTemplate": "Enviar modelo",
+      "scheduleMessage": "Agendar mensagem",
       "draftWithAI": "Rascunhar resposta com IA",
       "addCaption": "Escreva uma legenda…",
       "removeAttachment": "Remover anexo",
@@ -298,6 +299,26 @@
       "resumed": "IA retomada.",
       "updateError": "Não foi possível atualizar o assistente de IA.",
       "networkError": "Não foi possível falar com o servidor."
+    },
+    "schedule": {
+      "title": "Agendar mensagem",
+      "timezone": "Horário no seu fuso: {tz}",
+      "pastWarning": "Escolha um horário pelo menos 30 segundos à frente.",
+      "bodyPlaceholder": "Texto que será enviado no horário marcado",
+      "empty": "Nenhuma mensagem agendada nesta conversa.",
+      "cancel": "Cancelar",
+      "close": "Fechar",
+      "schedule": "Agendar",
+      "scheduled": "Mensagem agendada",
+      "error": "Não foi possível concluir",
+      "status": {
+        "pending": "Agendada",
+        "sending": "Enviando",
+        "sent": "Enviada",
+        "failed": "Falhou",
+        "missed": "Perdeu o horário",
+        "cancelled": "Cancelada"
+      }
     }
   },
   "Contacts": {

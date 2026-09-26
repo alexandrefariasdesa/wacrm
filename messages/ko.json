@@ -199,6 +199,7 @@
       "document": "문서",
       "voiceNote": "음성 메모",
       "sendTemplate": "템플릿 보내기",
+      "scheduleMessage": "메시지 예약",
       "draftWithAI": "AI로 답장 초안 작성",
       "addCaption": "캡션 추가…",
       "removeAttachment": "첨부 파일 제거",
@@ -298,6 +299,26 @@
       "resumed": "AI가 재개되었습니다.",
       "updateError": "AI 어시스턴트를 업데이트하지 못했습니다.",
       "networkError": "서버에 연결할 수 없습니다."
+    },
+    "schedule": {
+      "title": "메시지 예약",
+      "timezone": "현재 시간대: {tz}",
+      "pastWarning": "최소 30초 이후 시각을 선택하세요.",
+      "bodyPlaceholder": "예약 시각에 보낼 텍스트",
+      "empty": "이 대화에 예약된 메시지가 없습니다.",
+      "cancel": "취소",
+      "close": "닫기",
+      "schedule": "예약",
+      "scheduled": "메시지가 예약되었습니다",
+      "error": "완료하지 못했습니다",
+      "status": {
+        "pending": "예약됨",
+        "sending": "전송 중",
+        "sent": "전송됨",
+        "failed": "실패",
+        "missed": "시간 놓침",
+        "cancelled": "취소됨"
+      }
     }
   },
   "Contacts": {

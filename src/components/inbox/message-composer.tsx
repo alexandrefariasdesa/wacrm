@@ -22,6 +22,7 @@ import {
   Plus,
   MessageSquareDashed,
   Zap,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GatedButton } from "@/components/ui/gated-button";
@@ -55,6 +56,7 @@ import {
 import { validateInteractivePayload } from "@/lib/whatsapp/interactive";
 import type { InteractiveMessagePayload, QuickReply } from "@/types";
 import { QuickReplyPicker } from "./quick-reply-picker";
+import { ScheduleMessageDialog } from "./schedule-message-dialog";
 
 /** Media content types an agent can send from the composer. */
 export type ComposerMediaKind = "image" | "video" | "document" | "audio";
@@ -155,6 +157,10 @@ export function MessageComposer({
   const [savingQuickReply, setSavingQuickReply] = useState(false);
   const [quickReplyOpen, setQuickReplyOpen] = useState(false);
 
+  // Agendador de mensagens: diálogo + contador de pendentes no botão.
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduledPending, setScheduledPending] = useState(0);
+
   // Media attachment state. `draft` holds an uploaded-but-not-yet-sent
   // attachment; `busy` covers the upload/transcode window.
   const [draft, setDraft] = useState<MediaDraft | null>(null);
@@ -211,6 +217,24 @@ export function MessageComposer({
       removeStaged(draftRef.current?.path);
     };
   }, [clearTimer, removeStaged]);
+
+  // Contador de agendadas pendentes ao trocar de conversa.
+  useEffect(() => {
+    let alive = true;
+    void fetch(`/api/whatsapp/scheduled?conversation_id=${conversationId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { items?: { status: string }[] } | null) => {
+        if (alive && d?.items) {
+          setScheduledPending(
+            d.items.filter((i) => i.status === "pending" || i.status === "sending").length,
+          );
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [conversationId]);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -709,6 +733,25 @@ export function MessageComposer({
             <LayoutTemplate className="h-4 w-4" />
           </GatedButton>
 
+          {/* Agendador: texto livre em data/hora marcadas. Não herda a trava
+              das 24 h (o canal não oficial não tem janela). */}
+          <GatedButton
+            variant="ghost"
+            size="sm"
+            canAct={!readOnly}
+            gateReason="send messages"
+            title={readOnly ? undefined : t("scheduleMessage")}
+            className="relative h-9 w-9 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => setScheduleOpen(true)}
+          >
+            <Clock className="h-4 w-4" />
+            {scheduledPending > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
+                {scheduledPending}
+              </span>
+            )}
+          </GatedButton>
+
           <GatedButton
             variant="ghost"
             size="sm"
@@ -810,6 +853,14 @@ export function MessageComposer({
         open={quickReplyOpen}
         onOpenChange={setQuickReplyOpen}
         onPick={handlePickQuickReply}
+      />
+
+      <ScheduleMessageDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+        conversationId={conversationId}
+        initialText={text}
+        onChanged={setScheduledPending}
       />
     </div>
   );
