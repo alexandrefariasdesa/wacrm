@@ -8,6 +8,7 @@ export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
 // Chamado a cada minuto pelo pg_cron (via pg_net). Ver migration 046.
+// Fica FORA de /api/whatsapp/: o middleware bloqueia esse prefixo sem sessão e o cron não tem cookie.
 export async function GET(request: Request) {
   const denied = verifyCronSecret(request)
   if (denied) return denied
