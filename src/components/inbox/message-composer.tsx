@@ -7,6 +7,7 @@ import {
   useEffect,
   KeyboardEvent,
 } from "react";
+import dynamic from "next/dynamic";
 import {
   Send,
   LayoutTemplate,
@@ -23,7 +24,10 @@ import {
   MessageSquareDashed,
   Zap,
   Clock,
+  Smile,
 } from "lucide-react";
+import type { EmojiClickData } from "emoji-picker-react";
+import { Theme as EmojiTheme } from "emoji-picker-react";
 import { Button } from "@/components/ui/button";
 import { GatedButton } from "@/components/ui/gated-button";
 import {
@@ -39,7 +43,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useCan } from "@/hooks/use-can";
+import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -58,6 +64,17 @@ import { validateInteractivePayload } from "@/lib/whatsapp/interactive";
 import type { InteractiveMessagePayload, QuickReply } from "@/types";
 import { QuickReplyPicker } from "./quick-reply-picker";
 import { ScheduleMessageDialog } from "./schedule-message-dialog";
+
+// Emoji data/rendering is a sizeable chunk — load it only once the picker
+// is actually opened instead of paying for it on every inbox page load.
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[350px] w-[300px] items-center justify-center">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  ),
+});
 
 /** Media content types an agent can send from the composer. */
 export type ComposerMediaKind = "image" | "video" | "document" | "audio";
@@ -114,7 +131,6 @@ interface MediaDraft {
 
 interface MessageComposerProps {
   conversationId: string;
-  sessionExpired: boolean;
   /** Tipo do canal da conversa; define o teto de upload (Evolution: até 50 MB). */
   channelKind?: ChannelKind | null;
   onSend: (text: string, replyToId?: string) => void;
@@ -138,7 +154,6 @@ const OPUS_ENCODER_PATH = "/opus/encoderWorker.min.js";
 
 export function MessageComposer({
   conversationId,
-  sessionExpired,
   channelKind,
   onSend,
   onSendMedia,
@@ -148,10 +163,12 @@ export function MessageComposer({
   onClearReply,
 }: MessageComposerProps) {
   const t = useTranslations("Inbox.composer");
+  const { mode } = useTheme();
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Interactive-message builder dialog + quick-reply picker.
@@ -199,8 +216,7 @@ export function MessageComposer({
   // every capability — so the disabled branch is a no-op there.
   const canSend = useCan("send-messages");
   const readOnly = !canSend;
-  // Media (like free-form text) is only allowed inside the 24h window.
-  const inputsDisabled = readOnly || sessionExpired;
+  const inputsDisabled = readOnly;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -250,7 +266,7 @@ export function MessageComposer({
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
-    if (!trimmed || sending || sessionExpired) return;
+    if (!trimmed || sending) return;
 
     setSending(true);
     try {
@@ -262,7 +278,7 @@ export function MessageComposer({
     } finally {
       setSending(false);
     }
-  }, [text, sending, sessionExpired, onSend, replyTo?.id]);
+  }, [text, sending, onSend, replyTo?.id]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -280,6 +296,27 @@ export function MessageComposer({
       adjustHeight();
     },
     [adjustHeight]
+  );
+
+  // Insert the picked emoji at the caret (or replace the current
+  // selection) instead of just appending it, so it lands where the
+  // agent was typing.
+  const handleEmojiClick = useCallback(
+    (emojiData: EmojiClickData) => {
+      const el = textareaRef.current;
+      const start = el?.selectionStart ?? text.length;
+      const end = el?.selectionEnd ?? text.length;
+      const next = text.slice(0, start) + emojiData.emoji + text.slice(end);
+      setText(next);
+      setEmojiOpen(false);
+      requestAnimationFrame(() => {
+        adjustHeight();
+        const caret = start + emojiData.emoji.length;
+        el?.focus();
+        el?.setSelectionRange(caret, caret);
+      });
+    },
+    [text, adjustHeight]
   );
 
   // Ask the AI assistant for a suggested reply and drop it into the
@@ -575,23 +612,6 @@ export function MessageComposer({
           />
         </div>
       )}
-      {sessionExpired && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
-          <p className="text-xs text-amber-400">
-            {t("sessionExpiredHint")}
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-amber-400 hover:text-amber-300"
-            onClick={onOpenTemplates}
-          >
-            <LayoutTemplate className="mr-1 h-3 w-3" />
-            {t("templates")}
-          </Button>
-        </div>
-      )}
-
       {/* Hidden file inputs driven by the attach menu. */}
       <input
         ref={imageInputRef}
@@ -698,8 +718,7 @@ export function MessageComposer({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* + menu — interactive messages + quick replies. Gated on the
-              24h window like free-form text (interactive requires it). */}
+          {/* + menu — interactive messages + quick replies. */}
           <DropdownMenu>
             <DropdownMenuTrigger
               disabled={inputsDisabled}
@@ -738,8 +757,7 @@ export function MessageComposer({
             <LayoutTemplate className="h-4 w-4" />
           </GatedButton>
 
-          {/* Agendador: texto livre em data/hora marcadas. Não herda a trava
-              das 24 h (o canal não oficial não tem janela). */}
+          {/* Agendador: texto livre em data/hora marcadas. */}
           <GatedButton
             variant="ghost"
             size="sm"
@@ -774,27 +792,45 @@ export function MessageComposer({
             )}
           </GatedButton>
 
+          <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
+            <PopoverTrigger
+              disabled={readOnly}
+              title={readOnly ? t("readOnlyTitle") : t("emojiPicker")}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md p-0 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Smile className="h-4 w-4" />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto border-none bg-transparent p-0 shadow-none ring-0">
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                theme={mode === "dark" ? EmojiTheme.DARK : EmojiTheme.LIGHT}
+                autoFocusSearch={false}
+                lazyLoadEmojis
+                width={300}
+                height={360}
+              />
+            </PopoverContent>
+          </Popover>
+
           <textarea
             ref={textareaRef}
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder={
-              readOnly
-                ? t("readOnlyPlaceholder")
-                : sessionExpired
-                  ? t("sessionExpiredPlaceholder")
-                  : t("typeMessagePlaceholder")
+              readOnly ? t("readOnlyPlaceholder") : t("typeMessagePlaceholder")
             }
-            disabled={sessionExpired || readOnly}
+            disabled={readOnly}
             rows={1}
+            spellCheck
+            lang="pt-BR"
             // Textarea keeps its own inline title — the GatedButton
             // wrapping pattern doesn't apply to non-button inputs.
             // The placeholder text also surfaces the read-only state.
             title={readOnly ? t("readOnlyTitle") : undefined}
             className={cn(
               "flex-1 resize-none rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-colors focus:border-primary/50",
-              (sessionExpired || readOnly) && "cursor-not-allowed opacity-50"
+              readOnly && "cursor-not-allowed opacity-50"
             )}
           />
 
@@ -802,7 +838,7 @@ export function MessageComposer({
             size="sm"
             canAct={!readOnly}
             gateReason="send messages"
-            disabled={!text.trim() || sessionExpired || sending}
+            disabled={!text.trim() || sending}
             onClick={handleSend}
             className="h-9 w-9 shrink-0 bg-primary p-0 hover:bg-primary/90 disabled:opacity-40"
           >

@@ -179,18 +179,10 @@
       "today": "Today",
       "yesterday": "Yesterday"
     },
-    "sessionTimer": {
-      "expired": "Expired",
-      "xhRemaining": "{hours}h remaining",
-      "xmRemaining": "{minutes}m remaining",
-      "noCustomerMessages": "No customer messages"
-    },
     "composer": {
       "draftHint": "Tap the ✨ to draft a reply with AI — you can edit it before sending",
-      "sessionExpiredHint": "24-hour session expired. Use a template to re-engage.",
       "templates": "Templates",
       "readOnlyPlaceholder": "Read-only — viewers can browse but not reply",
-      "sessionExpiredPlaceholder": "Session expired - use a template",
       "typeMessagePlaceholder": "Type a message... (Shift+Enter for new line)",
       "readOnlyTitle": "Read-only — your role can't send messages",
       "recording": "Recording… {current} / {max}",
@@ -204,6 +196,7 @@
       "sendTemplate": "Send template",
       "scheduleMessage": "Schedule message",
       "draftWithAI": "Draft a reply with AI",
+      "emojiPicker": "Emojis",
       "addCaption": "Add a caption…",
       "removeAttachment": "Remove attachment",
       "moreActions": "More",

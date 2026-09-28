@@ -179,18 +179,10 @@
       "yesterday": "Ontem",
       "me": " (eu)"
     },
-    "sessionTimer": {
-      "expired": "Expirada",
-      "xhRemaining": "faltam {hours}h",
-      "xmRemaining": "faltam {minutes}min",
-      "noCustomerMessages": "Nenhuma mensagem do cliente"
-    },
     "composer": {
       "draftHint": "Toque no ✨ para a IA rascunhar uma resposta — você pode editar antes de enviar",
-      "sessionExpiredHint": "A janela de 24 horas expirou. Use um modelo para reabrir a conversa.",
       "templates": "Modelos",
       "readOnlyPlaceholder": "Somente leitura — visualizadores podem ler, mas não responder",
-      "sessionExpiredPlaceholder": "Sessão expirada — use um modelo",
       "typeMessagePlaceholder": "Escreva uma mensagem... (Shift+Enter para quebrar linha)",
       "readOnlyTitle": "Somente leitura — seu papel não pode enviar mensagens",
       "recording": "Gravando… {current} / {max}",
@@ -204,6 +196,7 @@
       "sendTemplate": "Enviar modelo",
       "scheduleMessage": "Agendar mensagem",
       "draftWithAI": "Rascunhar resposta com IA",
+      "emojiPicker": "Emojis",
       "addCaption": "Escreva uma legenda…",
       "removeAttachment": "Remover anexo",
       "moreActions": "Mais",
