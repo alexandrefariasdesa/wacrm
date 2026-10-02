@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { buildQualifiedBody } from './build-body'
+import { buildEventBody, type AzimuteEventKind } from './build-body'
 
 export const RETRY_DELAYS_MIN = [1, 5, 15, 60]
 export const MAX_ATTEMPTS = 5
@@ -9,6 +9,7 @@ const TIMEOUT_MS = 10_000
 interface EventRow {
   id: string
   contact_id: string | null
+  kind: AzimuteEventKind
   occurred_at: string
   attempts: number
 }
@@ -58,7 +59,7 @@ export async function drainAzimuteEvents(
         .maybeSingle()
       phone = (contact as { phone: string | null } | null)?.phone ?? null
     }
-    const body = buildQualifiedBody({ phone, occurredAt: row.occurred_at })
+    const body = buildEventBody({ kind: row.kind, phone, occurredAt: row.occurred_at })
     if (!body) {
       await setStatus({ status: 'skipped', last_error: 'contato sem telefone' })
       out.skipped += 1

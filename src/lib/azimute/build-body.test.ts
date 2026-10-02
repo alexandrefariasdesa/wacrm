@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildQualifiedBody } from './build-body'
+import { buildEventBody, buildQualifiedBody } from './build-body'
 
 describe('buildQualifiedBody', () => {
   it('manda só dígitos e o instante em ISO', () => {
@@ -12,5 +12,14 @@ describe('buildQualifiedBody', () => {
   it('null sem telefone ou com telefone curto', () => {
     expect(buildQualifiedBody({ phone: null, occurredAt: '2026-10-01T12:00:00Z' })).toBeNull()
     expect(buildQualifiedBody({ phone: '12345', occurredAt: '2026-10-01T12:00:00Z' })).toBeNull()
+  })
+})
+
+describe('buildEventBody', () => {
+  it.each(['link_sent', 'paid'] as const)('usa o tipo %s no corpo', (kind) => {
+    expect(buildEventBody({ kind, phone: '5521999990001', occurredAt: '2026-10-01T12:00:00Z' })).toMatchObject({
+      event: kind,
+      phone: '5521999990001',
+    })
   })
 })

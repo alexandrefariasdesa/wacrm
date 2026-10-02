@@ -6,7 +6,7 @@ const clock = () => NOW
 const URL_ = 'https://azimute.test/api/webhooks/crm/SEGREDO'
 
 function ev(over: Record<string, unknown> = {}) {
-  return { id: 'e1', contact_id: 'c1', occurred_at: '2026-10-01T11:59:00.000Z', attempts: 1, ...over }
+  return { id: 'e1', contact_id: 'c1', kind: 'qualified', occurred_at: '2026-10-01T11:59:00.000Z', attempts: 1, ...over }
 }
 
 function makeDb(events: unknown[], phone: string | null = '5521999990001') {
