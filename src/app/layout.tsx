@@ -47,6 +47,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#020617",
   colorScheme: "dark light",
+  // Teclado do celular encolhe a página (o campo de digitar não fica por baixo dele).
+  interactiveWidget: "resizes-content",
 };
 
 // Inline boot script — runs before React hydrates so the user's

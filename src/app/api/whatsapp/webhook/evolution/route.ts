@@ -144,6 +144,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'resolve failed' });
   }
 
+  const outbound = message.direction === 'outbound';
+
+  // Eco do que o próprio CRM enviou: o webhook pode chegar ANTES de o
+  // send-message gravar a linha com o id do provedor. Esperar um instante
+  // deixa a linha do CRM entrar primeiro, e o upsert abaixo vira no-op em
+  // vez de duplicar a bolha.
+  if (outbound) await new Promise((r) => setTimeout(r, 2500));
+
   const contentText =
     message.text ??
     (message.contentType === 'unknown' ? null : `[${message.contentType}]`);
@@ -157,13 +165,13 @@ export async function POST(request: Request) {
     .upsert(
       {
         conversation_id: resolved.conversationId,
-        sender_type: 'customer',
+        sender_type: outbound ? 'agent' : 'customer',
         content_type:
           message.contentType === 'unknown' ? 'text' : message.contentType,
         content_text: contentText,
         message_id: message.providerMessageId,
         channel_id: channel.id,
-        status: 'delivered',
+        status: outbound ? 'sent' : 'delivered',
         created_at: message.timestamp,
       },
       { onConflict: 'conversation_id,message_id', ignoreDuplicates: true }
@@ -178,6 +186,20 @@ export async function POST(request: Request) {
   const isReplay = !insertedRows || insertedRows.length === 0;
   if (isReplay) {
     return NextResponse.json({ ok: true, replay: true });
+  }
+
+  // Mensagem digitada no celular/WhatsApp Web: só espelha na conversa.
+  // Sem não-lidas, sem reabrir, sem automação nem IA.
+  if (outbound) {
+    await db
+      .from('conversations')
+      .update({
+        last_message_text: contentText,
+        last_message_at: message.timestamp,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', resolved.conversationId);
+    return NextResponse.json({ ok: true, outbound: true });
   }
 
   // Conversa reaberta + contadores. Mensagem nova de cliente sempre

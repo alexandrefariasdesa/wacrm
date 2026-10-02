@@ -31,6 +31,12 @@ export interface InboundEvolutionMessage {
   timestamp: string;
   /** Nome da instância que recebeu — é o que amarra ao canal. */
   instance: string | null;
+  /**
+   * `outbound` = enviada pelo próprio número (celular ou WhatsApp Web).
+   * O eco do que o CRM mandou chega igual; quem distingue é o dedupe por
+   * `providerMessageId`.
+   */
+  direction: 'inbound' | 'outbound';
 }
 
 interface EvolutionKey {
@@ -147,10 +153,11 @@ export function timestampToIso(
  * Classifica um evento do Evolution.
  *
  * `fromMe` é o caso que mais importa acertar: toda mensagem que NÓS
- * enviamos volta pelo webhook com essa marca. Sem descartá-la, cada
- * resposta do atendente seria persistida uma segunda vez como se fosse
- * do cliente — e, pior, dispararia a auto-resposta da IA contra a
- * própria resposta.
+ * enviamos volta pelo webhook com essa marca — inclusive as digitadas
+ * direto no celular/WhatsApp Web, que o CRM não conhece. Elas viram
+ * `direction: 'outbound'`: a rota grava como do atendente (dedupe pelo id
+ * do provedor evita duplicar o que o CRM mesmo enviou) e NÃO dispara
+ * automação nem auto-resposta da IA.
  */
 export function classifyEvolutionEvent(
   payload: EvolutionWebhookPayload
@@ -172,7 +179,6 @@ export function classifyEvolutionEvent(
   const jid = key?.remoteJid ?? '';
 
   if (!jid) return { kind: 'ignored', reason: 'no remoteJid' };
-  if (key?.fromMe) return { kind: 'ignored', reason: 'outbound echo' };
   if (!isIndividualJid(jid)) {
     return { kind: 'ignored', reason: `not a 1:1 chat (${jid})` };
   }
@@ -201,6 +207,7 @@ export function classifyEvolutionEvent(
       contentType,
       timestamp: timestampToIso(payload.data?.messageTimestamp),
       instance: payload.instance ?? null,
+      direction: key?.fromMe ? 'outbound' : 'inbound',
     },
   };
 }

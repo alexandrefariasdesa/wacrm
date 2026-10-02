@@ -79,6 +79,7 @@ describe('classifyEvolutionEvent', () => {
         contentType: 'text',
         timestamp: '2026-01-01T00:00:00.000Z',
         instance: 'receptivo',
+        direction: 'inbound',
       },
     });
   });
@@ -96,16 +97,18 @@ describe('classifyEvolutionEvent', () => {
     });
   });
 
-  it('ignores our own outbound echo', () => {
-    // Sem isto, cada resposta do atendente voltaria como se fosse do
-    // cliente — e dispararia a auto-resposta da IA contra ela mesma.
+  it('marks our own messages (phone / WhatsApp Web) as outbound', () => {
+    // A rota grava como do atendente e não dispara IA nem automação.
     const result = classifyEvolutionEvent(
       upsert({
         key: { remoteJid: JID, fromMe: true, id: 'EVO3' },
         message: { conversation: 'resposta do atendente' },
       })
     );
-    expect(result).toEqual({ kind: 'ignored', reason: 'outbound echo' });
+    expect(result).toMatchObject({
+      kind: 'message',
+      message: { direction: 'outbound', text: 'resposta do atendente' },
+    });
   });
 
   it.each([

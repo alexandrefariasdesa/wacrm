@@ -19,10 +19,12 @@ import type { Deal, PipelineStage } from "@/types";
 interface Props {
   deal: Deal;
   onMoved: (stageId: string, stage: PipelineStage) => void;
+  /** Selo maior (alvo de toque) — usado no celular. */
+  large?: boolean;
 }
 
 /** Selo da etapa do negócio; em negócios abertos vira um menu para trocar de etapa com um clique. */
-export function DealStageMenu({ deal, onMoved }: Props) {
+export function DealStageMenu({ deal, onMoved, large }: Props) {
   const t = useTranslations("Inbox.sidebar");
   const canSend = useCan("send-messages");
   const [stages, setStages] = useState<PipelineStage[] | null>(null);
@@ -31,11 +33,12 @@ export function DealStageMenu({ deal, onMoved }: Props) {
   const stage = deal.stage;
   if (!stage) return null;
 
+  const sizeClass = large ? "px-3 py-1.5 text-xs" : "px-1.5 py-0.5 text-[10px]";
   const badgeStyle = { backgroundColor: `${stage.color}20`, color: stage.color };
 
   if (!canChangeStage(deal.status)) {
     return (
-      <span className="rounded-full px-1.5 py-0.5 text-[10px]" style={badgeStyle}>
+      <span className={`rounded-full ${sizeClass}`} style={badgeStyle}>
         {stage.name}
       </span>
     );
@@ -74,11 +77,11 @@ export function DealStageMenu({ deal, onMoved }: Props) {
       <DropdownMenuTrigger
         disabled={!canSend || moving}
         title={t("changeStage")}
-        className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-60"
+        className={`inline-flex items-center gap-1 rounded-full ${sizeClass} disabled:cursor-not-allowed disabled:opacity-60`}
         style={badgeStyle}
       >
         {stage.name}
-        <ChevronDown className="h-2.5 w-2.5" />
+        <ChevronDown className={large ? "h-3.5 w-3.5" : "h-2.5 w-2.5"} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-64 w-48 border-border bg-popover">
         {(stages ?? [stage]).map((s) => (
