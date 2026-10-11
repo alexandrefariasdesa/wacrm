@@ -29,6 +29,9 @@ import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'crypto';
 
 import { classifyEvolutionEvent } from '@/lib/whatsapp/providers/evolution-inbound';
+import { importEvolutionHistory } from '@/lib/whatsapp/providers/evolution-history';
+import { reconcileEvolutionChannel } from '@/lib/whatsapp/providers/evolution-reconcile';
+import { notifyChannelEvent } from '@/lib/whatsapp/channel-alert';
 import { resolveConversationByPhone } from '@/lib/whatsapp/resolve-conversation';
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply';
 import { runAutomationsForTrigger } from '@/lib/automations/engine';
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
     // A sessão caiu ou voltou. Refletir isso na tela de configuração é o
     // que evita o pior modo de falha deste canal: o QR expira sozinho, e
     // sem este espelho o CRM ficaria "conectado" recebendo silêncio.
+    const wasConnected = channel.status === 'connected';
     await db
       .from('whatsapp_config')
       .update({
@@ -120,7 +124,49 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', channel.id);
+
+    const label =
+      (channel.label as string | null) ||
+      (channel.display_number as string | null) ||
+      'WhatsApp';
+
+    // Só a transição conta: o Evolution emite `close`/`connecting` em
+    // sequência durante uma reconexão normal, e um aviso por evento
+    // viraria ruído que ninguém lê.
+    if (event.state === 'close' && wasConnected) {
+      after(async () => {
+        await notifyChannelEvent(
+          `⚠️ ${label}: o WhatsApp DESCONECTOU. Enquanto estiver fora, nenhuma mensagem chega ao CRM. Abra Configurações > WhatsApp e leia o QR de novo.`
+        );
+      });
+    }
+
+    if (event.state === 'open' && !wasConnected) {
+      after(async () => {
+        let summary = '';
+        try {
+          const r = await reconcileEvolutionChannel(db, channel);
+          summary = `${r.inserted} mensagem(ns) recuperada(s) do período desde ${r.since}.`;
+        } catch (err) {
+          console.error('[evolution-webhook] reconcile failed:', err);
+          summary = 'Não consegui reconciliar as mensagens do período.';
+        }
+        await notifyChannelEvent(`✅ ${label}: o WhatsApp VOLTOU. ${summary}`);
+      });
+    }
+
     return NextResponse.json({ ok: true, state: event.state });
+  }
+
+  if (event.kind === 'history') {
+    // Histórico do pareamento: entra com a data original e sem efeito
+    // colateral (ver evolution-history.ts).
+    const result = await importEvolutionHistory(
+      db,
+      { id: channel.id as string, account_id: channel.account_id as string },
+      event.messages
+    );
+    return NextResponse.json({ ok: true, history: result, skipped: event.skipped });
   }
 
   const message = event.message;
@@ -134,7 +180,9 @@ export async function POST(request: Request) {
       db,
       accountId,
       `+${message.phone}`,
-      message.pushName,
+      // Nas mensagens nossas o `pushName` é o do PRÓPRIO número ("Bivak
+      // Educacional"): usá-lo renomeava o cliente com o nome da empresa.
+      message.direction === 'outbound' ? null : message.pushName,
       channel.id as string
     );
   } catch (err) {

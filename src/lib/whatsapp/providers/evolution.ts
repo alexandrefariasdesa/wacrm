@@ -197,10 +197,18 @@ export async function pairingQrCode(
 /**
  * Aponta o webhook da instância para o nosso receptor.
  *
- * Só `MESSAGES_UPSERT` (mensagem nova) e `CONNECTION_UPDATE` (a sessão
- * caiu ou voltou). O Evolution emite dezenas de eventos, e assinar todos
- * seria pagar parse e log de coisa que não usamos.
+ * `MESSAGES_UPSERT` (mensagem nova), `CONNECTION_UPDATE` (a sessão caiu
+ * ou voltou) e `MESSAGES_SET` (histórico entregue ao parear — sem ele, o
+ * que o WhatsApp manda num QR novo é descartado). O Evolution emite
+ * dezenas de eventos, e assinar todos seria pagar parse e log de coisa
+ * que não usamos.
  */
+export const EVOLUTION_WEBHOOK_EVENTS = [
+  'MESSAGES_UPSERT',
+  'CONNECTION_UPDATE',
+  'MESSAGES_SET',
+] as const;
+
 export async function setWebhook(
   auth: EvolutionAuth,
   webhookUrl: string
@@ -215,10 +223,86 @@ export async function setWebhook(
         url: webhookUrl,
         byEvents: false,
         base64: false,
-        events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
+        events: [...EVOLUTION_WEBHOOK_EVENTS],
       },
     }
   );
+}
+
+/**
+ * Liga a sincronização de histórico da instância. Só tem efeito no
+ * PRÓXIMO pareamento: é no QR que o WhatsApp decide o quanto de histórico
+ * envia ao aparelho vinculado. Sem isso, uma sessão refeita nasce vazia.
+ *
+ * O Evolution v2 exige o objeto de settings inteiro no `set` — mandar só
+ * um campo zera os outros —, então lemos o atual e mudamos só o que
+ * interessa.
+ */
+export async function enableHistorySync(auth: EvolutionAuth): Promise<void> {
+  const current = await request<Record<string, unknown>>(
+    auth,
+    'GET',
+    `/settings/find/${encodeURIComponent(auth.instance)}`
+  );
+  if (current?.syncFullHistory === true) return;
+  await request(
+    auth,
+    'POST',
+    `/settings/set/${encodeURIComponent(auth.instance)}`,
+    {
+      rejectCall: current?.rejectCall ?? false,
+      msgCall: current?.msgCall ?? '',
+      groupsIgnore: current?.groupsIgnore ?? false,
+      alwaysOnline: current?.alwaysOnline ?? false,
+      readMessages: current?.readMessages ?? false,
+      readStatus: current?.readStatus ?? false,
+      syncFullHistory: true,
+    }
+  );
+}
+
+interface FindMessagesPage {
+  messages?: { total?: number; pages?: number; records?: unknown[] };
+}
+
+/**
+ * Mensagens que o Evolution tem desde `sinceIso`, mais novas primeiro.
+ *
+ * O `findMessages` não filtra por data (testado na v2.3.7: o `where` por
+ * `messageTimestamp` é ignorado e volta tudo), mas pagina da mais nova
+ * para a mais antiga, então paramos assim que uma página inteira fica
+ * antes do corte. `maxPages` é o teto de segurança — 50 por página.
+ */
+export async function findMessagesSince(
+  auth: EvolutionAuth,
+  sinceIso: string,
+  maxPages = 40
+): Promise<unknown[]> {
+  const sinceSec = Math.floor(new Date(sinceIso).getTime() / 1000);
+  const out: unknown[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const data = await request<FindMessagesPage>(
+      auth,
+      'POST',
+      `/chat/findMessages/${encodeURIComponent(auth.instance)}`,
+      { where: {}, page, offset: 50 }
+    );
+    const records = data?.messages?.records ?? [];
+    if (records.length === 0) break;
+    let anyNewer = false;
+    for (const r of records) {
+      const ts = Number(
+        (r as { messageTimestamp?: number | string }).messageTimestamp
+      );
+      if (Number.isFinite(ts) && ts >= sinceSec) {
+        out.push(r);
+        anyNewer = true;
+      }
+    }
+    if (!anyNewer) break;
+    if (page >= (data?.messages?.pages ?? page)) break;
+  }
+  return out;
 }
 
 /**
@@ -242,7 +326,7 @@ export async function ensureInstance(
         enabled: true,
         url: webhookUrl,
         byEvents: false,
-        events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE'],
+        events: [...EVOLUTION_WEBHOOK_EVENTS],
       },
     });
   } catch (err) {

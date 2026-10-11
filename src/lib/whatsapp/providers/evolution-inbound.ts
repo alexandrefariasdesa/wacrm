@@ -14,6 +14,12 @@
 export type EvolutionEvent =
   | { kind: 'message'; message: InboundEvolutionMessage }
   | { kind: 'connection'; state: 'open' | 'connecting' | 'close' }
+  /**
+   * Lote de histórico (`messages.set`): o que o WhatsApp entrega ao
+   * pareamento. Entra na conversa com a data original e SEM efeito
+   * colateral — nada de automação, IA ou aviso de mensagem nova.
+   */
+  | { kind: 'history'; messages: InboundEvolutionMessage[]; skipped: number }
   | { kind: 'ignored'; reason: string };
 
 export interface InboundEvolutionMessage {
@@ -41,6 +47,12 @@ export interface InboundEvolutionMessage {
 
 interface EvolutionKey {
   remoteJid?: string;
+  /**
+   * Com endereçamento por LID (`addressingMode: 'lid'`) o `remoteJid` vem
+   * como `…@lid` — um identificador interno, sem telefone — e o número
+   * real fica aqui. Sessões pareadas há pouco usam LID em quase tudo.
+   */
+  remoteJidAlt?: string;
   fromMe?: boolean;
   id?: string;
 }
@@ -79,17 +91,20 @@ function replyTextOf(body: EvolutionMessageBody): string | null {
   );
 }
 
+interface EvolutionMessageData {
+  key?: EvolutionKey;
+  pushName?: string;
+  message?: EvolutionMessageBody;
+  messageTimestamp?: number | string;
+  state?: string;
+  [k: string]: unknown;
+}
+
 interface EvolutionWebhookPayload {
   event?: string;
   instance?: string;
-  data?: {
-    key?: EvolutionKey;
-    pushName?: string;
-    message?: EvolutionMessageBody;
-    messageTimestamp?: number | string;
-    state?: string;
-    [k: string]: unknown;
-  };
+  /** Objeto num evento só; lista no `messages.set` (histórico). */
+  data?: EvolutionMessageData | EvolutionMessageData[];
 }
 
 /** Telefone a partir do JID (`5583933455551@s.whatsapp.net`). */
@@ -163,30 +178,66 @@ export function classifyEvolutionEvent(
   payload: EvolutionWebhookPayload
 ): EvolutionEvent {
   const event = (payload.event ?? '').toLowerCase().replace(/_/g, '.');
+  const data = payload.data;
 
   if (event === 'connection.update') {
-    const raw = String(payload.data?.state ?? '');
+    const raw = String(
+      (Array.isArray(data) ? undefined : data?.state) ?? ''
+    );
     const state =
       raw === 'open' || raw === 'connecting' || raw === 'close' ? raw : 'close';
     return { kind: 'connection', state };
+  }
+
+  if (event === 'messages.set') {
+    const list = Array.isArray(data) ? data : [];
+    const messages: InboundEvolutionMessage[] = [];
+    let skipped = 0;
+    for (const item of list) {
+      const parsed = parseMessageData(item, payload.instance ?? null);
+      if (parsed.ok) messages.push(parsed.message);
+      else skipped += 1;
+    }
+    return { kind: 'history', messages, skipped };
   }
 
   if (event !== 'messages.upsert') {
     return { kind: 'ignored', reason: `event "${payload.event}" not handled` };
   }
 
-  const key = payload.data?.key;
-  const jid = key?.remoteJid ?? '';
+  if (!data || Array.isArray(data)) {
+    return { kind: 'ignored', reason: 'no remoteJid' };
+  }
 
-  if (!jid) return { kind: 'ignored', reason: 'no remoteJid' };
+  const parsed = parseMessageData(data, payload.instance ?? null);
+  if (!parsed.ok) return { kind: 'ignored', reason: parsed.reason };
+  return { kind: 'message', message: parsed.message };
+}
+
+/**
+ * Uma mensagem do Evolution (a mesma forma em `messages.upsert`,
+ * `messages.set` e `findMessages`) para o formato interno.
+ */
+export function parseMessageData(
+  data: EvolutionMessageData | undefined,
+  instance: string | null
+): { ok: true; message: InboundEvolutionMessage } | { ok: false; reason: string } {
+  const key = data?.key;
+  // LID sem telefone não identifica ninguém no CRM; com `remoteJidAlt` o
+  // número real está ali e a mensagem segue o caminho normal.
+  const rawJid = key?.remoteJid ?? '';
+  const jid =
+    rawJid.endsWith('@lid') && key?.remoteJidAlt ? key.remoteJidAlt : rawJid;
+
+  if (!jid) return { ok: false, reason: 'no remoteJid' };
   if (!isIndividualJid(jid)) {
-    return { kind: 'ignored', reason: `not a 1:1 chat (${jid})` };
+    return { ok: false, reason: `not a 1:1 chat (${jid})` };
   }
 
   const phone = phoneFromJid(jid);
-  if (!phone) return { kind: 'ignored', reason: `unparseable jid (${jid})` };
+  if (!phone) return { ok: false, reason: `unparseable jid (${jid})` };
 
-  const body = payload.data?.message;
+  const body = data?.message;
   const contentType = contentTypeOf(body);
   const text = textOf(body);
 
@@ -194,19 +245,19 @@ export function classifyEvolutionEvent(
   // reação, edição, revogação ou protocolo interno do WhatsApp. Ignorar
   // é melhor do que gravar uma bolha vazia na conversa.
   if (contentType === 'unknown' && !text) {
-    return { kind: 'ignored', reason: 'no renderable content' };
+    return { ok: false, reason: 'no renderable content' };
   }
 
   return {
-    kind: 'message',
+    ok: true,
     message: {
       phone,
-      pushName: payload.data?.pushName ?? null,
+      pushName: data?.pushName ?? null,
       providerMessageId: key?.id ?? null,
       text,
       contentType,
-      timestamp: timestampToIso(payload.data?.messageTimestamp),
-      instance: payload.instance ?? null,
+      timestamp: timestampToIso(data?.messageTimestamp),
+      instance,
       direction: key?.fromMe ? 'outbound' : 'inbound',
     },
   };

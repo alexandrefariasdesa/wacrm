@@ -235,3 +235,79 @@ describe('classifyEvolutionEvent — respostas de botão', () => {
     expect(textOfReply(message)).toEqual(['text', expected]);
   });
 });
+
+describe('LID addressing', () => {
+  it('uses remoteJidAlt as the phone when remoteJid is a LID', () => {
+    const e = classifyEvolutionEvent(
+      upsert({
+        key: {
+          remoteJid: '266481413681299@lid',
+          remoteJidAlt: '5521996591535@s.whatsapp.net',
+          fromMe: false,
+          id: 'LID1',
+        },
+        message: { conversation: 'oi' },
+        messageTimestamp: 1791748169,
+      })
+    );
+    expect(e.kind).toBe('message');
+    if (e.kind === 'message') expect(e.message.phone).toBe('5521996591535');
+  });
+
+  it('still ignores a LID that has no phone to fall back on', () => {
+    const e = classifyEvolutionEvent(
+      upsert({
+        key: { remoteJid: '266481413681299@lid', id: 'LID2' },
+        message: { conversation: 'oi' },
+      })
+    );
+    expect(e.kind).toBe('ignored');
+  });
+});
+
+describe('messages.set (history)', () => {
+  const set = (data: unknown) =>
+    ({
+      event: 'messages.set',
+      instance: 'receptivo',
+      data,
+    }) as Parameters<typeof classifyEvolutionEvent>[0];
+
+  it('turns the batch into a history event and counts what was skipped', () => {
+    const e = classifyEvolutionEvent(
+      set([
+        {
+          key: { remoteJid: JID, fromMe: false, id: 'H1' },
+          message: { conversation: 'antiga' },
+          messageTimestamp: 1791000000,
+          pushName: 'Maria',
+        },
+        {
+          key: { remoteJid: JID, fromMe: true, id: 'H2' },
+          message: { extendedTextMessage: { text: 'resposta' } },
+          messageTimestamp: 1791000100,
+        },
+        { key: { remoteJid: '1203630@g.us', id: 'H3' }, message: { conversation: 'grupo' } },
+      ])
+    );
+    expect(e.kind).toBe('history');
+    if (e.kind === 'history') {
+      expect(e.messages).toHaveLength(2);
+      expect(e.skipped).toBe(1);
+      expect(e.messages[0].direction).toBe('inbound');
+      expect(e.messages[0].timestamp).toBe(
+        new Date(1791000000 * 1000).toISOString()
+      );
+      expect(e.messages[1].direction).toBe('outbound');
+    }
+  });
+
+  it('accepts an empty or malformed batch without throwing', () => {
+    expect(classifyEvolutionEvent(set([]))).toEqual({
+      kind: 'history',
+      messages: [],
+      skipped: 0,
+    });
+    expect(classifyEvolutionEvent(set({ not: 'a list' })).kind).toBe('history');
+  });
+});

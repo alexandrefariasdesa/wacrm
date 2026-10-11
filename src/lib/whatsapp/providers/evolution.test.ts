@@ -195,6 +195,7 @@ describe('ensureInstance', () => {
     expect(call.body.webhook.events).toEqual([
       'MESSAGES_UPSERT',
       'CONNECTION_UPDATE',
+      'MESSAGES_SET',
     ]);
   });
 
