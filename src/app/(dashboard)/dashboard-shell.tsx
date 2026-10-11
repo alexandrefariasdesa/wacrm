@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { AccountAccessAlert } from "@/components/layout/account-access-alert";
+import { ChannelStatusBanner } from "@/components/layout/channel-status-banner";
 import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 
 // Auth-gated dashboard shell. Extracted from the layout so the layout
@@ -53,6 +54,9 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
           {/* Above every page: writes are being rejected and here's why.
               Renders nothing unless the account/role failed to resolve. */}
           <AccountAccessAlert />
+          {/* Canal não-oficial fora do ar: o QR expira sozinho e o CRM só
+              vê silêncio. Renderiza nada enquanto tudo está conectado. */}
+          <ChannelStatusBanner />
           {children}
         </main>
       </div>

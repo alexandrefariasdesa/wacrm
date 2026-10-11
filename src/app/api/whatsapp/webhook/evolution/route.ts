@@ -30,8 +30,7 @@ import { timingSafeEqual } from 'crypto';
 
 import { classifyEvolutionEvent } from '@/lib/whatsapp/providers/evolution-inbound';
 import { importEvolutionHistory } from '@/lib/whatsapp/providers/evolution-history';
-import { reconcileEvolutionChannel } from '@/lib/whatsapp/providers/evolution-reconcile';
-import { notifyChannelEvent } from '@/lib/whatsapp/channel-alert';
+import { applyChannelHealth } from '@/lib/whatsapp/channel-health';
 import { resolveConversationByPhone } from '@/lib/whatsapp/resolve-conversation';
 import { dispatchInboundToAiReply } from '@/lib/ai/auto-reply';
 import { runAutomationsForTrigger } from '@/lib/automations/engine';
@@ -112,50 +111,32 @@ export async function POST(request: Request) {
     // A sessão caiu ou voltou. Refletir isso na tela de configuração é o
     // que evita o pior modo de falha deste canal: o QR expira sozinho, e
     // sem este espelho o CRM ficaria "conectado" recebendo silêncio.
-    const wasConnected = channel.status === 'connected';
-    await db
-      .from('whatsapp_config')
-      .update({
-        status: event.state === 'open' ? 'connected' : 'disconnected',
-        connected_at:
-          event.state === 'open'
-            ? new Date().toISOString()
-            : channel.connected_at,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', channel.id);
-
-    const label =
-      (channel.label as string | null) ||
-      (channel.display_number as string | null) ||
-      'WhatsApp';
-
-    // Só a transição conta: o Evolution emite `close`/`connecting` em
-    // sequência durante uma reconexão normal, e um aviso por evento
-    // viraria ruído que ninguém lê.
-    if (event.state === 'close' && wasConnected) {
-      after(async () => {
-        await notifyChannelEvent(
-          `⚠️ ${label}: o WhatsApp DESCONECTOU. Enquanto estiver fora, nenhuma mensagem chega ao CRM. Abra Configurações > WhatsApp e leia o QR de novo.`
-        );
-      });
+    //
+    // `connecting` é transitório (reconexão em andamento): atualiza o
+    // espelho, mas não decide queda nem volta. Quem decide — e avisa —
+    // é `applyChannelHealth`, o mesmo ponto que o vigia usa, para a
+    // mesma queda não gerar dois alertas.
+    if (event.state === 'connecting') {
+      await db
+        .from('whatsapp_config')
+        .update({ status: 'connecting', updated_at: new Date().toISOString() })
+        .eq('id', channel.id);
+      return NextResponse.json({ ok: true, state: event.state });
     }
 
-    if (event.state === 'open' && !wasConnected) {
-      after(async () => {
-        let summary = '';
-        try {
-          const r = await reconcileEvolutionChannel(db, channel);
-          summary = `${r.inserted} mensagem(ns) recuperada(s) do período desde ${r.since}.`;
-        } catch (err) {
-          console.error('[evolution-webhook] reconcile failed:', err);
-          summary = 'Não consegui reconciliar as mensagens do período.';
-        }
-        await notifyChannelEvent(`✅ ${label}: o WhatsApp VOLTOU. ${summary}`);
-      });
-    }
+    const transition = await applyChannelHealth(
+      db,
+      channel,
+      event.state === 'open' ? 'up' : 'down',
+      'o WhatsApp encerrou a sessão'
+    );
+    if (transition.followUp) after(transition.followUp);
 
-    return NextResponse.json({ ok: true, state: event.state });
+    return NextResponse.json({
+      ok: true,
+      state: event.state,
+      transition: transition.kind,
+    });
   }
 
   if (event.kind === 'history') {
