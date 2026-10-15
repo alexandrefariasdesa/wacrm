@@ -57,7 +57,22 @@ export async function applyChannelHealth(
     | 'unknown'
     | 'up'
     | 'down';
-  if (previous === observed) return { kind: 'unchanged', followUp: null };
+  if (previous === observed) {
+    // O webhook grava `status = 'connecting'` em toda reconexão do Baileys
+    // sem mexer em `health_state`. Quando o `open` seguinte chega o estado
+    // já é `up` e nada devolvia o espelho para `connected` — a inbox lia
+    // `status !== 'connected'` e mostrava o número como desconectado até
+    // alguém abrir as Configurações. Repara aqui, sem avisar ninguém:
+    // para a saúde do canal nada mudou.
+    const mirrored = (channel as { status?: string | null }).status;
+    if (observed === 'up' && mirrored && mirrored !== 'connected') {
+      await db
+        .from('whatsapp_config')
+        .update({ status: 'connected', updated_at: new Date().toISOString() })
+        .eq('id', channel.id);
+    }
+    return { kind: 'unchanged', followUp: null };
+  }
 
   const now = new Date().toISOString();
   // `.eq('health_state', previous)` é a trava de corrida: se o webhook e

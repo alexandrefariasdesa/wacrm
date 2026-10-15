@@ -117,10 +117,17 @@ export async function POST(request: Request) {
     // é `applyChannelHealth`, o mesmo ponto que o vigia usa, para a
     // mesma queda não gerar dois alertas.
     if (event.state === 'connecting') {
-      await db
-        .from('whatsapp_config')
-        .update({ status: 'connecting', updated_at: new Date().toISOString() })
-        .eq('id', channel.id);
+      // Canal saudável que apenas reconecta (rotina do Baileys) não vira
+      // "conectando" no espelho: a inbox lê `status` e piscaria como
+      // desconectada por um instante que não é queda. Só espelha quando
+      // o canal já não está `up`.
+      const health = (channel as { health_state?: string | null }).health_state;
+      if (health !== 'up') {
+        await db
+          .from('whatsapp_config')
+          .update({ status: 'connecting', updated_at: new Date().toISOString() })
+          .eq('id', channel.id);
+      }
       return NextResponse.json({ ok: true, state: event.state });
     }
 

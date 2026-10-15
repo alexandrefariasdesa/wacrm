@@ -62,6 +62,29 @@ describe('applyChannelHealth', () => {
     expect(patches).toHaveLength(0);
   });
 
+  it('repairs a status left at "connecting" once the session is observed open again', async () => {
+    // O webhook grava status=connecting em toda reconexão do Baileys mas
+    // não mexe em health_state; quando o `open` chega, health_state já é
+    // `up` e nada restaurava o status — a inbox mostrava "desconectado".
+    const { db, patches, guards } = fakeDb(true);
+    const stuck = { ...(channel('up') as object), status: 'connecting' } as never;
+
+    const t = await applyChannelHealth(db, stuck, 'up');
+
+    expect(t).toEqual({ kind: 'unchanged', followUp: null });
+    expect(patches).toHaveLength(1);
+    expect(patches[0]).toMatchObject({ status: 'connected' });
+    expect(patches[0]).not.toHaveProperty('health_state');
+    expect(guards).toContainEqual(['id', 'ch-1']);
+  });
+
+  it('does not touch a channel that is already up and connected', async () => {
+    const { db, patches } = fakeDb(true);
+    const ok = { ...(channel('up') as object), status: 'connected' } as never;
+    await applyChannelHealth(db, ok, 'up');
+    expect(patches).toHaveLength(0);
+  });
+
   it('flags up → down and alerts through the follow-up', async () => {
     const { db, patches, guards } = fakeDb(true);
     const t = await applyChannelHealth(db, channel('up'), 'down', 'sessão encerrada');
